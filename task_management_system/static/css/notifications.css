@@ -1,0 +1,553 @@
+/* ==========================================================
+   TPMS NOTIFICATION FRAMEWORK
+   Enterprise Edition v1.0
+==========================================================*/
+
+
+/* ==========================================================
+   NOTIFICATION PANEL
+==========================================================*/
+
+.notification-panel{
+
+    background:#fff;
+
+    border-radius:18px;
+
+    box-shadow:var(--shadow);
+
+    overflow:hidden;
+
+}
+
+
+/* ==========================================================
+   HEADER
+==========================================================*/
+
+.notification-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:22px 25px;
+
+    border-bottom:1px solid var(--border);
+
+}
+
+.notification-title{
+
+    font-size:20px;
+
+    font-weight:700;
+
+}
+
+.notification-actions{
+
+    display:flex;
+
+    gap:12px;
+
+}
+
+
+/* ==========================================================
+   LIST
+==========================================================*/
+
+.notification-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+}
+
+
+/* ==========================================================
+   ITEM
+==========================================================*/
+
+.notification-item{
+
+    display:flex;
+
+    gap:18px;
+
+    align-items:flex-start;
+
+    padding:22px;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+    border-bottom:1px solid #EEF2F7;
+
+    position:relative;
+
+}
+
+.notification-item:last-child{
+
+    border-bottom:none;
+
+}
+
+.notification-item:hover{
+
+    background:#F8FAFC;
+
+}
+
+
+/* ==========================================================
+   UNREAD
+==========================================================*/
+
+.notification-item.unread{
+
+    background:#F0F9FF;
+
+}
+
+.notification-item.unread::before{
+
+    content:"";
+
+    position:absolute;
+
+    left:0;
+
+    top:0;
+
+    width:5px;
+
+    height:100%;
+
+    background:var(--primary);
+
+}
+
+
+/* ==========================================================
+   ICON
+==========================================================*/
+
+.notification-icon{
+
+    width:55px;
+
+    height:55px;
+
+    border-radius:16px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    color:white;
+
+    font-size:22px;
+
+    flex-shrink:0;
+
+}
+
+.icon-info{
+
+    background:var(--info);
+
+}
+
+.icon-success{
+
+    background:var(--success);
+
+}
+
+.icon-warning{
+
+    background:var(--warning);
+
+}
+
+.icon-danger{
+
+    background:var(--danger);
+
+}
+
+.icon-primary{
+
+    background:var(--primary);
+
+}
+
+
+/* ==========================================================
+   CONTENT
+==========================================================*/
+
+.notification-content{
+
+    flex:1;
+
+}
+
+.notification-content h4{
+
+    font-size:16px;
+
+    margin-bottom:6px;
+
+}
+
+.notification-content p{
+
+    color:var(--text-light);
+
+    line-height:1.6;
+
+    margin-bottom:8px;
+
+}
+
+.notification-time{
+
+    color:#94A3B8;
+
+    font-size:13px;
+
+}
+
+
+/* ==========================================================
+   PRIORITY BADGES
+==========================================================*/
+
+.priority{
+
+    display:inline-block;
+
+    padding:5px 12px;
+
+    border-radius:30px;
+
+    font-size:11px;
+
+    font-weight:700;
+
+}
+
+.priority-low{
+
+    background:#DCFCE7;
+
+    color:#166534;
+
+}
+
+.priority-normal{
+
+    background:#DBEAFE;
+
+    color:#1D4ED8;
+
+}
+
+.priority-high{
+
+    background:#FEF3C7;
+
+    color:#92400E;
+
+}
+
+.priority-critical{
+
+    background:#FEE2E2;
+
+    color:#991B1B;
+
+}
+
+
+/* ==========================================================
+   ACTION BUTTONS
+==========================================================*/
+
+.notification-buttons{
+
+    display:flex;
+
+    gap:10px;
+
+    margin-top:12px;
+
+}
+
+
+/* ==========================================================
+   DROPDOWN
+==========================================================*/
+
+.notification-dropdown{
+
+    position:absolute;
+
+    top:70px;
+
+    right:20px;
+
+    width:420px;
+
+    background:white;
+
+    border-radius:18px;
+
+    box-shadow:var(--shadow-lg);
+
+    display:none;
+
+    overflow:hidden;
+
+    z-index:999;
+
+}
+
+.notification-dropdown.show{
+
+    display:block;
+
+}
+
+
+/* ==========================================================
+   DROPDOWN BODY
+==========================================================*/
+
+.notification-body{
+
+    max-height:520px;
+
+    overflow-y:auto;
+
+}
+
+
+/* ==========================================================
+   EMPTY STATE
+==========================================================*/
+
+.notification-empty{
+
+    text-align:center;
+
+    padding:60px 30px;
+
+}
+
+.notification-empty i{
+
+    font-size:70px;
+
+    color:#CBD5E1;
+
+    margin-bottom:20px;
+
+}
+
+.notification-empty h3{
+
+    margin-bottom:10px;
+
+}
+
+.notification-empty p{
+
+    color:var(--text-light);
+
+}
+
+
+/* ==========================================================
+   FOOTER
+==========================================================*/
+
+.notification-footer{
+
+    padding:18px;
+
+    border-top:1px solid var(--border);
+
+    text-align:center;
+
+}
+
+.notification-footer a{
+
+    color:var(--primary);
+
+    font-weight:700;
+
+}
+
+
+/* ==========================================================
+   TOASTS
+==========================================================*/
+
+.toast-container{
+
+    position:fixed;
+
+    top:25px;
+
+    right:25px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:15px;
+
+    z-index:9999;
+
+}
+
+.toast{
+
+    min-width:360px;
+
+    background:white;
+
+    border-radius:16px;
+
+    box-shadow:var(--shadow-lg);
+
+    padding:18px;
+
+    display:flex;
+
+    gap:15px;
+
+    align-items:flex-start;
+
+    animation:toastSlide .35s ease;
+
+}
+
+.toast-success{
+
+    border-left:5px solid var(--success);
+
+}
+
+.toast-warning{
+
+    border-left:5px solid var(--warning);
+
+}
+
+.toast-danger{
+
+    border-left:5px solid var(--danger);
+
+}
+
+.toast-info{
+
+    border-left:5px solid var(--info);
+
+}
+
+
+/* ==========================================================
+   COUNTER
+==========================================================*/
+
+.notification-counter{
+
+    position:absolute;
+
+    top:-5px;
+
+    right:-5px;
+
+    width:20px;
+
+    height:20px;
+
+    border-radius:50%;
+
+    background:var(--danger);
+
+    color:white;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    font-size:11px;
+
+    font-weight:700;
+
+}
+
+
+/* ==========================================================
+   ANIMATION
+==========================================================*/
+
+@keyframes toastSlide{
+
+    from{
+
+        opacity:0;
+
+        transform:translateX(100px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateX(0);
+
+    }
+
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+==========================================================*/
+
+@media(max-width:768px){
+
+    .notification-dropdown{
+
+        width:95%;
+
+        right:2.5%;
+
+    }
+
+    .toast{
+
+        min-width:95%;
+
+    }
+
+}

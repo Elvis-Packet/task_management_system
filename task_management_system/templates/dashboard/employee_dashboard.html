@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+{% block title %}
+Employee Dashboard
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>{{ greeting }}, {{ user.first_name }} 👋</h1>
+
+        <p>
+            Welcome back to the Task Performance Management System.
+        </p>
+
+    </div>
+
+    <div class="dashboard-clock">
+
+        <h2 id="live-date"></h2>
+
+        <h3 id="live-time"></h3>
+
+    </div>
+
+</div>
+
+
+
+<!-- ============================= -->
+
+<!-- Dashboard Cards -->
+
+<!-- ============================= -->
+
+<div class="dashboard-grid">
+
+    <div class="card stat-card">
+
+        <h4>Total Activities</h4>
+
+        <h2>{{ cards.activities }}</h2>
+
+    </div>
+
+    <div class="card stat-card">
+
+        <h4>Completed</h4>
+
+        <h2>{{ cards.completed }}</h2>
+
+    </div>
+
+    <div class="card stat-card">
+
+        <h4>Pending</h4>
+
+        <h2>{{ cards.pending }}</h2>
+
+    </div>
+
+    <div class="card stat-card">
+
+        <h4>Assigned Tasks</h4>
+
+        <h2>{{ cards.assigned }}</h2>
+
+    </div>
+
+    <div class="card stat-card">
+
+        <h4>Notifications</h4>
+
+        <h2>{{ cards.notifications }}</h2>
+
+    </div>
+
+    <div class="card stat-card">
+
+        <h4>Completion</h4>
+
+        <h2>{{ cards.completion }}%</h2>
+
+    </div>
+
+</div>
+
+
+
+<!-- ============================= -->
+
+<!-- Active Week -->
+
+<!-- ============================= -->
+
+<div class="card">
+
+    <div class="card-header">
+
+        <h3>Current Weekly Plan</h3>
+
+    </div>
+
+    <div class="card-body">
+
+        {% if active_week %}
+
+        <table class="table">
+
+            <tr>
+
+                <th>Week</th>
+
+                <td>{{ active_week.week_number }}</td>
+
+            </tr>
+
+            <tr>
+
+                <th>Start Date</th>
+
+                <td>{{ active_week.start_date }}</td>
+
+            </tr>
+
+            <tr>
+
+                <th>End Date</th>
+
+                <td>{{ active_week.end_date }}</td>
+
+            </tr>
+
+            <tr>
+
+                <th>Status</th>
+
+                <td>
+
+                    <span class="badge badge-success">
+
+                        {{ active_week.status.value }}
+
+                    </span>
+
+                </td>
+
+            </tr>
+
+        </table>
+
+        {% else %}
+
+        <div class="empty-state">
+
+            <h3>No Active Weekly Plan</h3>
+
+            <p>Create a weekly plan to begin tracking your work.</p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+
+<!-- ============================= -->
+
+<!-- Planned Activities -->
+
+<!-- ============================= -->
+
+<div class="card">
+
+    <div class="card-header">
+
+        <h3>This Week's Activities</h3>
+
+    </div>
+
+    <div class="card-body">
+
+        {% if activities %}
+
+        <table class="table">
+
+            <thead>
+
+            <tr>
+
+                <th>Date</th>
+
+                <th>Activity</th>
+
+                <th>Priority</th>
+
+                <th>Status</th>
+
+            </tr>
+
+            </thead>
+
+            <tbody>
+
+            {% for activity in activities %}
+
+            <tr>
+
+                <td>{{ activity.activity_date }}</td>
+
+                <td>{{ activity.title }}</td>
+
+                <td>{{ activity.priority.value }}</td>
+
+                <td>{{ activity.manager_status.value }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        {% else %}
+
+        <div class="empty-state">
+
+            No activities added.
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+
+<!-- ============================= -->
+
+<!-- Assigned Tasks -->
+
+<!-- ============================= -->
+
+<div class="card">
+
+    <div class="card-header">
+
+        <h3>Assigned Tasks</h3>
+
+    </div>
+
+    <div class="card-body">
+
+        {% if assigned_tasks %}
+
+        <table class="table">
+
+            <thead>
+
+            <tr>
+
+                <th>Date</th>
+
+                <th>Task</th>
+
+                <th>Priority</th>
+
+                <th>Status</th>
+
+            </tr>
+
+            </thead>
+
+            <tbody>
+
+            {% for task in assigned_tasks %}
+
+            <tr>
+
+                <td>{{ task.task_date }}</td>
+
+                <td>{{ task.title }}</td>
+
+                <td>{{ task.priority.value }}</td>
+
+                <td>{{ task.status.value }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        {% else %}
+
+        <div class="empty-state">
+
+            No assigned tasks.
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+
+<!-- ============================= -->
+
+<!-- Notifications -->
+
+<!-- ============================= -->
+
+<div class="card">
+
+    <div class="card-header">
+
+        <h3>Recent Notifications</h3>
+
+    </div>
+
+    <div class="card-body">
+
+        {% if notifications %}
+
+        <ul class="notification-list">
+
+            {% for notification in notifications %}
+
+            <li>
+
+                <strong>{{ notification.title }}</strong>
+
+                <br>
+
+                {{ notification.message }}
+
+                <br>
+
+                <small>
+
+                    {{ notification.created_at.strftime("%d %b %Y %I:%M %p") }}
+
+                </small>
+
+            </li>
+
+            {% endfor %}
+
+        </ul>
+
+        {% else %}
+
+        <div class="empty-state">
+
+            No notifications available.
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+
+<script>
+
+function updateClock(){
+
+    const now = new Date();
+
+    document.getElementById("live-date").innerHTML =
+
+        now.toDateString();
+
+    document.getElementById("live-time").innerHTML =
+
+        now.toLocaleTimeString();
+
+}
+
+updateClock();
+
+setInterval(updateClock,1000);
+
+</script>
+
+{% endblock %}

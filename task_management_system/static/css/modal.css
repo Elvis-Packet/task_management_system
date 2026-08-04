@@ -1,0 +1,493 @@
+/* ==========================================================
+   TPMS MODAL FRAMEWORK
+   Enterprise Edition v1.0
+==========================================================*/
+
+
+/* ==========================================================
+   MODAL OVERLAY
+==========================================================*/
+
+.modal{
+
+    position:fixed;
+
+    inset:0;
+
+    background:rgba(15,23,42,.55);
+
+    backdrop-filter:blur(6px);
+
+    display:none;
+
+    justify-content:center;
+
+    align-items:center;
+
+    padding:30px;
+
+    z-index:9999;
+
+    animation:fadeIn .25s ease;
+
+}
+
+.modal.show{
+
+    display:flex;
+
+}
+
+
+/* ==========================================================
+   MODAL WINDOW
+==========================================================*/
+
+.modal-dialog{
+
+    width:100%;
+
+    max-width:650px;
+
+    background:#fff;
+
+    border-radius:22px;
+
+    overflow:hidden;
+
+    box-shadow:0 35px 80px rgba(0,0,0,.30);
+
+    animation:modalIn .30s ease;
+
+}
+
+
+/* Sizes */
+
+.modal-sm{
+
+    max-width:420px;
+
+}
+
+.modal-lg{
+
+    max-width:900px;
+
+}
+
+.modal-xl{
+
+    max-width:1200px;
+
+}
+
+.modal-full{
+
+    max-width:95%;
+
+    height:92vh;
+
+}
+
+
+/* ==========================================================
+   HEADER
+==========================================================*/
+
+.modal-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:22px 28px;
+
+    border-bottom:1px solid var(--border);
+
+}
+
+.modal-title{
+
+    font-size:22px;
+
+    font-weight:700;
+
+}
+
+.modal-subtitle{
+
+    margin-top:5px;
+
+    color:var(--text-light);
+
+    font-size:14px;
+
+}
+
+
+/* ==========================================================
+   CLOSE BUTTON
+==========================================================*/
+
+.modal-close{
+
+    width:42px;
+
+    height:42px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:#F1F5F9;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.modal-close:hover{
+
+    background:var(--danger);
+
+    color:white;
+
+    transform:rotate(90deg);
+
+}
+
+
+/* ==========================================================
+   BODY
+==========================================================*/
+
+.modal-body{
+
+    padding:28px;
+
+    max-height:70vh;
+
+    overflow-y:auto;
+
+}
+
+
+/* ==========================================================
+   FOOTER
+==========================================================*/
+
+.modal-footer{
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    gap:15px;
+
+    padding:22px 28px;
+
+    border-top:1px solid var(--border);
+
+    background:#FAFAFA;
+
+}
+
+
+/* ==========================================================
+   ICON MODAL
+==========================================================*/
+
+.modal-icon{
+
+    width:90px;
+
+    height:90px;
+
+    border-radius:50%;
+
+    margin:auto;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-size:42px;
+
+    margin-bottom:20px;
+
+}
+
+.modal-success{
+
+    background:#DCFCE7;
+
+    color:#15803D;
+
+}
+
+.modal-warning{
+
+    background:#FEF3C7;
+
+    color:#B45309;
+
+}
+
+.modal-danger{
+
+    background:#FEE2E2;
+
+    color:#B91C1C;
+
+}
+
+.modal-info{
+
+    background:#DBEAFE;
+
+    color:#1D4ED8;
+
+}
+
+
+/* ==========================================================
+   CONFIRMATION
+==========================================================*/
+
+.confirm-box{
+
+    text-align:center;
+
+}
+
+.confirm-box h3{
+
+    font-size:25px;
+
+    margin-bottom:12px;
+
+}
+
+.confirm-box p{
+
+    color:var(--text-light);
+
+    line-height:1.7;
+
+}
+
+
+/* ==========================================================
+   MODAL GRID
+==========================================================*/
+
+.modal-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:20px;
+
+}
+
+.modal-grid-3{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:20px;
+
+}
+
+
+/* ==========================================================
+   TIMELINE
+==========================================================*/
+
+.modal-timeline{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:18px;
+
+}
+
+
+/* ==========================================================
+   SCROLLBAR
+==========================================================*/
+
+.modal-body::-webkit-scrollbar{
+
+    width:8px;
+
+}
+
+.modal-body::-webkit-scrollbar-thumb{
+
+    background:#CBD5E1;
+
+    border-radius:50px;
+
+}
+
+
+/* ==========================================================
+   LOADING STATE
+==========================================================*/
+
+.modal-loading{
+
+    text-align:center;
+
+    padding:60px;
+
+}
+
+.modal-loading i{
+
+    font-size:45px;
+
+    color:var(--primary);
+
+}
+
+
+/* ==========================================================
+   IMAGE PREVIEW
+==========================================================*/
+
+.modal-image{
+
+    width:100%;
+
+    border-radius:16px;
+
+}
+
+
+/* ==========================================================
+   STICKY FOOTER
+==========================================================*/
+
+.modal-footer.sticky{
+
+    position:sticky;
+
+    bottom:0;
+
+}
+
+
+/* ==========================================================
+   ANIMATIONS
+==========================================================*/
+
+@keyframes fadeIn{
+
+    from{
+
+        opacity:0;
+
+    }
+
+    to{
+
+        opacity:1;
+
+    }
+
+}
+
+@keyframes modalIn{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(-40px) scale(.95);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0) scale(1);
+
+    }
+
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+==========================================================*/
+
+@media(max-width:992px){
+
+    .modal-grid,
+
+    .modal-grid-3{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+@media(max-width:768px){
+
+    .modal{
+
+        padding:15px;
+
+    }
+
+    .modal-dialog{
+
+        width:100%;
+
+        max-width:100%;
+
+        border-radius:18px;
+
+    }
+
+    .modal-header{
+
+        padding:18px;
+
+    }
+
+    .modal-body{
+
+        padding:18px;
+
+    }
+
+    .modal-footer{
+
+        padding:18px;
+
+        flex-direction:column;
+
+    }
+
+    .modal-footer .btn{
+
+        width:100%;
+
+    }
+
+}

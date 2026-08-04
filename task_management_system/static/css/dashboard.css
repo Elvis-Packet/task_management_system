@@ -1,0 +1,517 @@
+/* ==========================================================
+   TPMS DASHBOARD FRAMEWORK
+   Version 1.0
+==========================================================*/
+
+
+/* ==========================================================
+   PAGE HEADER
+==========================================================*/
+
+.dashboard-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:30px;
+
+    flex-wrap:wrap;
+
+    gap:20px;
+
+}
+
+.dashboard-title h1{
+
+    font-size:30px;
+
+    font-weight:800;
+
+    color:var(--text);
+
+}
+
+.dashboard-title p{
+
+    margin-top:6px;
+
+    color:var(--text-light);
+
+    font-size:15px;
+
+}
+
+
+/* ==========================================================
+   WELCOME CARD
+==========================================================*/
+
+.welcome-card{
+
+    position:relative;
+
+    overflow:hidden;
+
+    background:linear-gradient(135deg,#2563EB,#1D4ED8);
+
+    color:white;
+
+    border-radius:22px;
+
+    padding:35px;
+
+    margin-bottom:30px;
+
+    box-shadow:var(--shadow-lg);
+
+}
+
+.welcome-card::after{
+
+    content:"";
+
+    position:absolute;
+
+    width:320px;
+
+    height:320px;
+
+    border-radius:50%;
+
+    right:-120px;
+
+    top:-120px;
+
+    background:rgba(255,255,255,.08);
+
+}
+
+.welcome-card::before{
+
+    content:"";
+
+    position:absolute;
+
+    width:220px;
+
+    height:220px;
+
+    border-radius:50%;
+
+    left:-70px;
+
+    bottom:-70px;
+
+    background:rgba(255,255,255,.05);
+
+}
+
+.welcome-content{
+
+    position:relative;
+
+    z-index:5;
+
+}
+
+.welcome-content h2{
+
+    font-size:32px;
+
+    font-weight:800;
+
+}
+
+.welcome-content p{
+
+    margin-top:10px;
+
+    font-size:16px;
+
+    opacity:.92;
+
+}
+
+
+/* ==========================================================
+   KPI GRID
+==========================================================*/
+
+.kpi-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+
+    gap:22px;
+
+    margin-bottom:30px;
+
+}
+
+
+/* ==========================================================
+   CONTENT GRID
+==========================================================*/
+
+.dashboard-grid{
+
+    display:grid;
+
+    grid-template-columns:2fr 1fr;
+
+    gap:25px;
+
+}
+
+
+/* ==========================================================
+   SIDEBAR PANEL
+==========================================================*/
+
+.dashboard-panel{
+
+    background:white;
+
+    border-radius:18px;
+
+    box-shadow:var(--shadow);
+
+    overflow:hidden;
+
+}
+
+.panel-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:20px 25px;
+
+    border-bottom:1px solid var(--border);
+
+}
+
+.panel-title{
+
+    font-size:18px;
+
+    font-weight:700;
+
+}
+
+.panel-body{
+
+    padding:25px;
+
+}
+
+
+/* ==========================================================
+   QUICK ACTIONS
+==========================================================*/
+
+.quick-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:18px;
+
+}
+
+.quick-item{
+
+    background:#F8FAFC;
+
+    border-radius:16px;
+
+    padding:24px;
+
+    text-align:center;
+
+    cursor:pointer;
+
+    transition:.30s;
+
+    border:1px solid transparent;
+
+}
+
+.quick-item:hover{
+
+    background:white;
+
+    border-color:var(--primary);
+
+    transform:translateY(-5px);
+
+}
+
+.quick-item i{
+
+    font-size:34px;
+
+    color:var(--primary);
+
+    margin-bottom:14px;
+
+}
+
+.quick-item h4{
+
+    font-size:15px;
+
+    font-weight:700;
+
+}
+
+.quick-item p{
+
+    margin-top:6px;
+
+    color:var(--text-light);
+
+    font-size:13px;
+
+}
+
+
+/* ==========================================================
+   ACTIVITY LIST
+==========================================================*/
+
+.activity-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:18px;
+
+}
+
+.activity-item{
+
+    display:flex;
+
+    gap:15px;
+
+    align-items:flex-start;
+
+    padding-bottom:16px;
+
+    border-bottom:1px solid #EEF2F7;
+
+}
+
+.activity-item:last-child{
+
+    border-bottom:none;
+
+}
+
+.activity-icon{
+
+    width:46px;
+
+    height:46px;
+
+    border-radius:50%;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    color:white;
+
+    background:var(--primary);
+
+}
+
+.activity-content h5{
+
+    font-size:15px;
+
+    margin-bottom:4px;
+
+}
+
+.activity-content small{
+
+    color:var(--text-light);
+
+}
+
+
+/* ==========================================================
+   PERFORMANCE RING PLACEHOLDER
+==========================================================*/
+
+.performance-circle{
+
+    width:170px;
+
+    height:170px;
+
+    border-radius:50%;
+
+    margin:auto;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    background:conic-gradient(
+        var(--success) 0deg,
+        var(--success) 250deg,
+        #E2E8F0 250deg
+    );
+
+}
+
+.performance-circle span{
+
+    width:130px;
+
+    height:130px;
+
+    border-radius:50%;
+
+    background:white;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-size:30px;
+
+    font-weight:800;
+
+}
+
+
+/* ==========================================================
+   ANNOUNCEMENTS
+==========================================================*/
+
+.announcement{
+
+    display:flex;
+
+    gap:15px;
+
+    padding:18px;
+
+    border-left:4px solid var(--primary);
+
+    background:#F8FAFC;
+
+    border-radius:12px;
+
+    margin-bottom:15px;
+
+}
+
+.announcement:last-child{
+
+    margin-bottom:0;
+
+}
+
+.announcement i{
+
+    color:var(--primary);
+
+    font-size:22px;
+
+}
+
+.announcement h5{
+
+    margin-bottom:5px;
+
+}
+
+.announcement p{
+
+    color:var(--text-light);
+
+    font-size:14px;
+
+}
+
+
+/* ==========================================================
+   DASHBOARD FOOTER
+==========================================================*/
+
+.dashboard-footer{
+
+    margin-top:35px;
+
+    text-align:center;
+
+    color:var(--text-light);
+
+    font-size:13px;
+
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+==========================================================*/
+
+@media(max-width:1200px){
+
+    .dashboard-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+@media(max-width:768px){
+
+    .welcome-card{
+
+        padding:25px;
+
+    }
+
+    .welcome-content h2{
+
+        font-size:24px;
+
+    }
+
+    .quick-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .dashboard-header{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+    }
+
+}

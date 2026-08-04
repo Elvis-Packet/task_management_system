@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Task Performance Management System</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" rel="stylesheet">
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Segoe UI,Tahoma,Geneva,Verdana,sans-serif;
+        }
+
+        body{
+
+            min-height:100vh;
+
+            display:flex;
+
+            justify-content:center;
+
+            align-items:center;
+
+            background:linear-gradient(135deg,#0f172a,#1e3a8a,#2563eb);
+
+            overflow:hidden;
+
+        }
+
+        .background{
+
+            position:absolute;
+
+            width:100%;
+
+            height:100%;
+
+            overflow:hidden;
+
+        }
+
+        .circle{
+
+            position:absolute;
+
+            border-radius:50%;
+
+            background:rgba(255,255,255,.08);
+
+            animation:float 18s linear infinite;
+
+        }
+
+        .circle:nth-child(1){
+
+            width:180px;
+
+            height:180px;
+
+            left:5%;
+
+            top:20%;
+
+        }
+
+        .circle:nth-child(2){
+
+            width:250px;
+
+            height:250px;
+
+            right:8%;
+
+            top:10%;
+
+        }
+
+        .circle:nth-child(3){
+
+            width:140px;
+
+            height:140px;
+
+            bottom:8%;
+
+            left:35%;
+
+        }
+
+        @keyframes float{
+
+            from{transform:translateY(0px) rotate(0deg);}
+
+            to{transform:translateY(-40px) rotate(360deg);}
+
+        }
+
+        .login-card{
+
+            width:430px;
+
+            background:#fff;
+
+            border-radius:18px;
+
+            padding:35px;
+
+            box-shadow:0 20px 50px rgba(0,0,0,.25);
+
+            position:relative;
+
+            z-index:5;
+
+        }
+
+        .logo{
+
+            text-align:center;
+
+            margin-bottom:20px;
+
+        }
+
+        .logo i{
+
+            font-size:55px;
+
+            color:#2563eb;
+
+        }
+
+        .logo h2{
+
+            margin-top:10px;
+
+            color:#1f2937;
+
+        }
+
+        .clock{
+
+            text-align:center;
+
+            color:#555;
+
+            margin-bottom:20px;
+
+        }
+
+        .clock h3{
+
+            font-size:32px;
+
+        }
+
+        .input-group{
+
+            margin-bottom:18px;
+
+        }
+
+        .input-group label{
+
+            display:block;
+
+            margin-bottom:8px;
+
+            font-weight:600;
+
+        }
+
+        .input-wrapper{
+
+            position:relative;
+
+        }
+
+        .input-wrapper i{
+
+            position:absolute;
+
+            left:14px;
+
+            top:14px;
+
+            color:#777;
+
+        }
+
+        .input-wrapper input{
+
+            width:100%;
+
+            padding:13px 13px 13px 42px;
+
+            border:1px solid #ccc;
+
+            border-radius:10px;
+
+            font-size:15px;
+
+            outline:none;
+
+        }
+
+        .toggle-password{
+
+            position:absolute;
+
+            right:15px;
+
+            top:14px;
+
+            cursor:pointer;
+
+            color:#777;
+
+        }
+
+        .options{
+
+            display:flex;
+
+            justify-content:space-between;
+
+            align-items:center;
+
+            margin-bottom:20px;
+
+            font-size:14px;
+
+        }
+
+        .btn{
+
+            width:100%;
+
+            padding:14px;
+
+            border:none;
+
+            background:#2563eb;
+
+            color:white;
+
+            border-radius:10px;
+
+            font-size:16px;
+
+            cursor:pointer;
+
+            transition:.3s;
+
+        }
+
+        .btn:hover{
+
+            background:#1d4ed8;
+
+        }
+
+        .footer{
+
+            margin-top:25px;
+
+            text-align:center;
+
+            color:#777;
+
+            font-size:13px;
+
+        }
+
+        .flash{
+
+            padding:12px;
+
+            margin-bottom:15px;
+
+            border-radius:8px;
+
+        }
+
+        .success{
+
+            background:#dcfce7;
+
+            color:#166534;
+
+        }
+
+        .danger{
+
+            background:#fee2e2;
+
+            color:#991b1b;
+
+        }
+
+        .warning{
+
+            background:#fef3c7;
+
+            color:#92400e;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="background">
+
+    <div class="circle"></div>
+
+    <div class="circle"></div>
+
+    <div class="circle"></div>
+
+</div>
+
+<div class="login-card">
+
+    <div class="logo">
+
+        <i class="fas fa-tasks"></i>
+
+        <h2>Task Performance Management System</h2>
+
+    </div>
+
+    <div class="clock">
+
+        <h3 id="time"></h3>
+
+        <span id="date"></span>
+
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+        {% if messages %}
+
+            {% for category,message in messages %}
+
+                <div class="flash {{ category }}">
+
+                    {{ message }}
+
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
+    {% endwith %}
+
+    <form method="POST">
+
+        <div class="input-group">
+
+            <label>Email Address</label>
+
+            <div class="input-wrapper">
+
+                <i class="fas fa-envelope"></i>
+
+                <input
+                    type="email"
+                    name="email"
+                    required
+                    placeholder="Enter email">
+
+            </div>
+
+        </div>
+
+        <div class="input-group">
+
+            <label>Password</label>
+
+            <div class="input-wrapper">
+
+                <i class="fas fa-lock"></i>
+
+                <input
+                    type="password"
+                    name="password"
+                    id="password"
+                    required
+                    placeholder="Enter password">
+
+                <i
+                    class="fas fa-eye toggle-password"
+                    onclick="togglePassword()">
+                </i>
+
+            </div>
+
+        </div>
+
+        <div class="options">
+
+            <label>
+
+                <input type="checkbox" name="remember">
+
+                Remember Me
+
+            </label>
+
+            <a href="{{ url_for('auth.forgot_password') }}">
+
+                Forgot Password?
+
+            </a>
+
+        </div>
+
+        <button class="btn">
+
+            <i class="fas fa-sign-in-alt"></i>
+
+            Login
+
+        </button>
+
+    </form>
+
+    <div class="footer">
+
+        Version 1.0.0
+
+        <br><br>
+
+        © {{ now().year if false else "2026" }}
+
+        Task Performance Management System
+
+    </div>
+
+</div>
+
+<script>
+
+function togglePassword(){
+
+    const field=document.getElementById("password");
+
+    field.type=field.type==="password"?"text":"password";
+
+}
+
+function updateClock(){
+
+    const now=new Date();
+
+    document.getElementById("time").innerHTML=
+
+        now.toLocaleTimeString();
+
+    document.getElementById("date").innerHTML=
+
+        now.toDateString();
+
+}
+
+setInterval(updateClock,1000);
+
+updateClock();
+
+</script>
+
+</body>
+
+</html>

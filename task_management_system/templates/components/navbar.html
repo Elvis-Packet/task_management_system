@@ -1,0 +1,131 @@
+<nav class="navbar">
+
+    <!-- Left Section -->
+
+    <div class="navbar-left">
+
+        <!-- Sidebar Toggle -->
+
+        <button
+            id="sidebarToggle"
+            class="icon-btn">
+
+            <i class="fas fa-bars"></i>
+
+        </button>
+
+        <!-- Page Title -->
+
+        <div class="page-title">
+
+            <h2>
+
+                {% block page_title %}
+
+                Dashboard
+
+                {% endblock %}
+
+            </h2>
+
+            <small>
+
+                Welcome back,
+
+                {{ current_user.first_name }}
+
+            </small>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Center Section -->
+
+    <div class="navbar-center">
+
+        <!-- Global Search -->
+
+        <div class="search-box">
+
+            <i class="fas fa-search"></i>
+
+            <input
+                type="text"
+                placeholder="Search employees, plans, reports...">
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Right Section -->
+
+    <div class="navbar-right">
+
+        <!-- Clock -->
+
+        <div class="clock-card">
+
+            <div id="liveDate"></div>
+
+            <strong id="liveClock"></strong>
+
+        </div>
+
+        <!-- Notifications -->
+
+        <div class="nav-icon">
+
+            <button class="icon-btn">
+
+                <i class="fas fa-bell"></i>
+
+                <span class="notification-count">
+
+                    {{ unread_notifications|default(0) }}
+
+                </span>
+
+            </button>
+
+        </div>
+
+
+
+        <!-- Profile -->
+
+        <div class="profile-menu">
+
+            <img
+
+                src="{{ url_for('static', filename='images/avatar.png') }}"
+
+                class="profile-photo">
+
+            <div>
+
+                <strong>
+
+                    {{ current_user.full_name }}
+
+                </strong>
+
+                <small>
+
+                    {{ current_user.role.value.replace("_"," ") }}
+
+                </small>
+
+            </div>
+
+            <i class="fas fa-chevron-down"></i>
+
+        </div>
+
+    </div>
+
+</nav>

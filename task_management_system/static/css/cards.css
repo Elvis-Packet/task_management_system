@@ -1,0 +1,634 @@
+/* ==========================================================
+   TPMS CARD FRAMEWORK
+   Version 1.0
+==========================================================*/
+
+
+/* ==========================================================
+   DEFAULT CARD
+==========================================================*/
+
+.card{
+
+    background:var(--card-bg);
+
+    border-radius:18px;
+
+    box-shadow:var(--shadow);
+
+    transition:.35s;
+
+    overflow:hidden;
+
+    position:relative;
+
+}
+
+.card:hover{
+
+    transform:translateY(-6px);
+
+    box-shadow:var(--shadow-lg);
+
+}
+
+
+/* ==========================================================
+   CARD HEADER
+==========================================================*/
+
+.card-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:20px 25px;
+
+    border-bottom:1px solid var(--border);
+
+}
+
+.card-title{
+
+    font-size:19px;
+
+    font-weight:700;
+
+    color:var(--text);
+
+}
+
+.card-subtitle{
+
+    font-size:13px;
+
+    color:var(--text-light);
+
+    margin-top:3px;
+
+}
+
+
+/* ==========================================================
+   CARD BODY
+==========================================================*/
+
+.card-body{
+
+    padding:25px;
+
+}
+
+
+/* ==========================================================
+   CARD FOOTER
+==========================================================*/
+
+.card-footer{
+
+    padding:18px 25px;
+
+    border-top:1px solid var(--border);
+
+    background:#fafafa;
+
+}
+
+
+/* ==========================================================
+   STATISTICS CARD
+==========================================================*/
+
+.stat-card{
+
+    background:white;
+
+    border-radius:18px;
+
+    padding:25px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    position:relative;
+
+    overflow:hidden;
+
+    box-shadow:var(--shadow);
+
+    transition:.35s;
+
+}
+
+.stat-card:hover{
+
+    transform:translateY(-5px);
+
+    box-shadow:var(--shadow-lg);
+
+}
+
+
+/* Left */
+
+.stat-info{
+
+    z-index:2;
+
+}
+
+.stat-title{
+
+    color:var(--text-light);
+
+    font-size:14px;
+
+}
+
+.stat-value{
+
+    margin-top:10px;
+
+    font-size:36px;
+
+    font-weight:800;
+
+    color:var(--text);
+
+}
+
+.stat-change{
+
+    margin-top:12px;
+
+    font-size:13px;
+
+    font-weight:600;
+
+}
+
+
+/* Right */
+
+.stat-icon{
+
+    width:75px;
+
+    height:75px;
+
+    border-radius:20px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    font-size:32px;
+
+    color:white;
+
+}
+
+
+/* Card Colors */
+
+.stat-primary .stat-icon{
+
+    background:var(--primary);
+
+}
+
+.stat-success .stat-icon{
+
+    background:var(--success);
+
+}
+
+.stat-warning .stat-icon{
+
+    background:var(--warning);
+
+}
+
+.stat-danger .stat-icon{
+
+    background:var(--danger);
+
+}
+
+
+/* Background Decoration */
+
+.stat-card::after{
+
+    content:"";
+
+    position:absolute;
+
+    width:180px;
+
+    height:180px;
+
+    border-radius:50%;
+
+    right:-70px;
+
+    bottom:-70px;
+
+    background:rgba(37,99,235,.05);
+
+}
+
+
+/* ==========================================================
+   PERFORMANCE CARD
+==========================================================*/
+
+.performance-card{
+
+    padding:25px;
+
+    border-radius:18px;
+
+    background:white;
+
+    box-shadow:var(--shadow);
+
+}
+
+.performance-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:25px;
+
+}
+
+.performance-title{
+
+    font-size:18px;
+
+    font-weight:700;
+
+}
+
+
+/* ==========================================================
+   PROGRESS BAR
+==========================================================*/
+
+.progress{
+
+    width:100%;
+
+    height:12px;
+
+    background:#E2E8F0;
+
+    border-radius:100px;
+
+    overflow:hidden;
+
+}
+
+.progress-bar{
+
+    height:100%;
+
+    border-radius:100px;
+
+    transition:1s;
+
+}
+
+.progress-primary{
+
+    background:var(--primary);
+
+}
+
+.progress-success{
+
+    background:var(--success);
+
+}
+
+.progress-warning{
+
+    background:var(--warning);
+
+}
+
+.progress-danger{
+
+    background:var(--danger);
+
+}
+
+
+/* ==========================================================
+   PROFILE CARD
+==========================================================*/
+
+.profile-card{
+
+    background:white;
+
+    border-radius:18px;
+
+    text-align:center;
+
+    padding:30px;
+
+    box-shadow:var(--shadow);
+
+}
+
+.profile-card img{
+
+    width:120px;
+
+    height:120px;
+
+    border-radius:50%;
+
+    object-fit:cover;
+
+    margin:auto;
+
+    border:5px solid #EEF4FF;
+
+}
+
+.profile-card h3{
+
+    margin-top:20px;
+
+}
+
+.profile-card p{
+
+    color:var(--text-light);
+
+    margin-top:5px;
+
+}
+
+
+/* ==========================================================
+   INFORMATION CARD
+==========================================================*/
+
+.info-card{
+
+    display:flex;
+
+    gap:20px;
+
+    align-items:flex-start;
+
+    padding:20px;
+
+    border-radius:16px;
+
+    background:white;
+
+    box-shadow:var(--shadow);
+
+}
+
+.info-icon{
+
+    width:60px;
+
+    height:60px;
+
+    border-radius:15px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-size:24px;
+
+    color:white;
+
+    background:var(--primary);
+
+}
+
+.info-content h4{
+
+    margin-bottom:8px;
+
+}
+
+
+/* ==========================================================
+   KPI GRID
+==========================================================*/
+
+.dashboard-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+
+    gap:22px;
+
+}
+
+
+/* ==========================================================
+   QUICK ACTIONS
+==========================================================*/
+
+.quick-actions{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+
+    gap:18px;
+
+}
+
+.action-card{
+
+    background:white;
+
+    border-radius:18px;
+
+    padding:30px;
+
+    text-align:center;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+    box-shadow:var(--shadow);
+
+}
+
+.action-card:hover{
+
+    transform:translateY(-5px);
+
+}
+
+.action-card i{
+
+    font-size:40px;
+
+    color:var(--primary);
+
+}
+
+.action-card h4{
+
+    margin-top:18px;
+
+}
+
+
+/* ==========================================================
+   MINI CARD
+==========================================================*/
+
+.mini-card{
+
+    background:white;
+
+    padding:18px;
+
+    border-radius:14px;
+
+    box-shadow:var(--shadow);
+
+}
+
+
+/* ==========================================================
+   ALERT CARD
+==========================================================*/
+
+.alert-card{
+
+    display:flex;
+
+    gap:15px;
+
+    padding:20px;
+
+    border-left:5px solid var(--warning);
+
+    background:#FFFDF5;
+
+    border-radius:10px;
+
+}
+
+
+/* ==========================================================
+   TIMELINE CARD
+==========================================================*/
+
+.timeline-card{
+
+    background:white;
+
+    padding:25px;
+
+    border-radius:18px;
+
+    box-shadow:var(--shadow);
+
+}
+
+
+/* ==========================================================
+   EMPTY STATE
+==========================================================*/
+
+.empty-state{
+
+    text-align:center;
+
+    padding:70px 20px;
+
+}
+
+.empty-state i{
+
+    font-size:70px;
+
+    color:#CBD5E1;
+
+}
+
+.empty-state h3{
+
+    margin-top:20px;
+
+}
+
+.empty-state p{
+
+    margin-top:8px;
+
+    color:var(--text-light);
+
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+==========================================================*/
+
+@media(max-width:992px){
+
+    .stat-card{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+        gap:25px;
+
+    }
+
+}
+
+@media(max-width:768px){
+
+    .card-header{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+        gap:10px;
+
+    }
+
+    .dashboard-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
