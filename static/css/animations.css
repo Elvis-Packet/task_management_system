@@ -1,0 +1,54 @@
+/* ==========================================================
+   TPMS ANIMATIONS
+==========================================================*/
+
+.fade-in{
+    animation:fadeIn .4s ease;
+}
+
+.slide-up{
+    animation:slideUp .35s ease;
+}
+
+.zoom-in{
+    animation:zoomIn .3s ease;
+}
+
+@keyframes fadeIn{
+    from{
+        opacity:0;
+    }
+    to{
+        opacity:1;
+    }
+}
+
+@keyframes slideUp{
+    from{
+        opacity:0;
+        transform:translateY(25px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+@keyframes zoomIn{
+    from{
+        opacity:0;
+        transform:scale(.9);
+    }
+    to{
+        opacity:1;
+        transform:scale(1);
+    }
+}
+
+.hover-lift{
+    transition:.3s;
+}
+
+.hover-lift:hover{
+    transform:translateY(-5px);
+}

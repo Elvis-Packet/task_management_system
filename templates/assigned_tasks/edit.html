@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}
+Edit Task
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h2>
+
+            Edit Assigned Task
+
+        </h2>
+
+        <p>
+
+            Update task details.
+
+        </p>
+
+    </div>
+
+</div>
+
+<form method="POST">
+
+<div class="card">
+
+<div class="card-header">
+
+<h3>
+
+Assignment Details
+
+</h3>
+
+</div>
+
+<div class="card-body">
+
+<div class="row">
+
+<div class="col-md-6">
+
+<div class="form-group">
+
+<label>
+
+Employee
+
+</label>
+
+<select
+name="employee_id"
+class="form-control"
+required>
+
+{% for employee in employees %}
+
+<option value="{{ employee.id }}"
+
+{% if employee.id==task.employee_id %}
+
+selected
+
+{% endif %}>
+
+{{ employee.employee_number }} - {{ employee.full_name }}
+
+</option>
+
+{% endfor %}
+
+</select>
+
+</div>
+
+</div>
+
+<div class="col-md-6">
+
+<div class="form-group">
+
+<label>
+
+Priority
+
+</label>
+
+<select
+name="priority"
+class="form-control">
+
+{% for priority in priorities %}
+
+<option value="{{ priority.name }}"
+
+{% if priority==task.priority %}
+
+selected
+
+{% endif %}>
+
+{{ priority.value }}
+
+</option>
+
+{% endfor %}
+
+</select>
+
+</div>
+
+</div>
+
+</div>
+
+<br>
+
+<div class="form-group">
+
+<label>
+
+Task Title
+
+</label>
+
+<input
+type="text"
+name="title"
+class="form-control"
+value="{{ task.title }}"
+required>
+
+</div>
+
+<br>
+
+<div class="form-group">
+
+<label>
+
+Description
+
+</label>
+
+<textarea
+name="description"
+rows="5"
+class="form-control">{{ task.description }}</textarea>
+
+</div>
+
+<br>
+
+<div class="row">
+
+<div class="col-md-6">
+
+<div class="form-group">
+
+<label>
+
+Due Date
+
+</label>
+
+<input
+type="date"
+name="due_date"
+class="form-control"
+value="{{ task.due_date }}"
+required>
+
+</div>
+
+</div>
+
+<div class="col-md-6">
+
+<div class="form-group">
+
+<label>
+
+Due Time
+
+</label>
+
+<input
+type="time"
+name="due_time"
+class="form-control"
+value="{{ task.due_time }}">
+
+</div>
+
+</div>
+
+</div>
+
+<br>
+
+<div class="form-group">
+
+<label>
+
+Related Activity
+
+</label>
+
+<select
+name="related_activity_id"
+class="form-control">
+
+<option value="">
+
+None
+
+</option>
+
+{% for activity in activities %}
+
+<option
+value="{{ activity.id }}"
+
+{% if task.related_activity_id==activity.id %}
+
+selected
+
+{% endif %}>
+
+{{ activity.activity_date }} -
+{{ activity.title }}
+
+</option>
+
+{% endfor %}
+
+</select>
+
+</div>
+
+</div>
+
+</div>
+
+<br>
+
+<div class="text-end">
+
+<a
+href="{{ url_for('assigned_task.view',task_id=task.id) }}"
+class="btn btn-secondary">
+
+Cancel
+
+</a>
+
+<button
+type="submit"
+class="btn btn-primary">
+
+<i class="fas fa-save"></i>
+
+Save Changes
+
+</button>
+
+</div>
+
+</form>
+
+{% endblock %}

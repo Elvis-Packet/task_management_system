@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}
+Assigned Tasks
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h2>
+
+            Assigned Tasks
+
+        </h2>
+
+        <p>
+
+            Manage all tasks assigned to employees.
+
+        </p>
+
+    </div>
+
+    <div>
+
+        <a href="{{ url_for('assigned_task.create') }}"
+           class="btn btn-primary">
+
+            <i class="fas fa-plus"></i>
+
+            Assign Task
+
+        </a>
+
+    </div>
+
+</div>
+
+<div class="card">
+
+    <div class="card-header">
+
+        <h3>
+
+            Task List
+
+        </h3>
+
+    </div>
+
+    <div class="card-body">
+
+        {% if tasks %}
+
+        <div style="overflow-x:auto;">
+
+        <table class="table table-hover">
+
+            <thead>
+
+                <tr>
+
+                    <th>Employee</th>
+
+                    <th>Title</th>
+
+                    <th>Assigned</th>
+
+                    <th>Due</th>
+
+                    <th>Priority</th>
+
+                    <th>Status</th>
+
+                    <th style="width:260px">
+
+                        Actions
+
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for task in tasks %}
+
+                <tr>
+
+                    <td>
+
+                        {{ task.employee.full_name }}
+
+                    </td>
+
+                    <td>
+
+                        {{ task.title }}
+
+                    </td>
+
+                    <td>
+
+                        {{ task.assigned_date }}
+
+                    </td>
+
+                    <td>
+
+                        {{ task.due_date }}
+
+                    </td>
+
+                    <td>
+
+                        {{ task.priority.value }}
+
+                    </td>
+
+                    <td>
+
+                        {{ task.status.value }}
+
+                    </td>
+
+                    <td>
+
+                        <div style="display:flex;gap:6px;flex-wrap:nowrap;">
+
+                            <a href="{{ url_for('assigned_task.view',task_id=task.id) }}"
+                               class="btn btn-info btn-sm">
+
+                                <i class="fas fa-eye"></i>
+
+                            </a>
+
+                            <a href="{{ url_for('assigned_task.edit',task_id=task.id) }}"
+                               class="btn btn-warning btn-sm">
+
+                                <i class="fas fa-edit"></i>
+
+                            </a>
+
+                            <a href="{{ url_for('assigned_task.delete',task_id=task.id) }}"
+                               class="btn btn-danger btn-sm"
+                               onclick="return confirm('Delete this task?')">
+
+                                <i class="fas fa-trash"></i>
+
+                            </a>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-state">
+
+            <i class="fas fa-tasks fa-4x"></i>
+
+            <h3>
+
+                No Assigned Tasks
+
+            </h3>
+
+            <p>
+
+                Start assigning work to your employees.
+
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

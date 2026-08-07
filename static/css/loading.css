@@ -1,0 +1,49 @@
+/* ==========================================================
+   TPMS LOADING FRAMEWORK
+==========================================================*/
+
+.loading-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(255,255,255,.85);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:99999;
+}
+
+.spinner{
+    width:60px;
+    height:60px;
+    border:6px solid #E5E7EB;
+    border-top-color:var(--primary);
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+}
+
+@keyframes spin{
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+.skeleton{
+    background:linear-gradient(
+        90deg,
+        #F1F5F9 25%,
+        #E2E8F0 37%,
+        #F1F5F9 63%
+    );
+    background-size:400% 100%;
+    animation:skeleton 1.4s ease infinite;
+    border-radius:10px;
+}
+
+@keyframes skeleton{
+    0%{
+        background-position:100% 0;
+    }
+    100%{
+        background-position:-100% 0;
+    }
+}

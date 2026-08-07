@@ -1,0 +1,215 @@
+<!-- ==========================================================
+FLASH MESSAGES COMPONENT
+=========================================================== -->
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+
+    {% if messages %}
+
+        <div class="flash-container">
+
+            {% for category, message in messages %}
+
+                <div class="flash-message flash-{{ category }}">
+
+                    <div class="flash-icon">
+
+                        {% if category == "success" %}
+                            <i class="fas fa-check-circle"></i>
+
+                        {% elif category == "danger" %}
+                            <i class="fas fa-times-circle"></i>
+
+                        {% elif category == "warning" %}
+                            <i class="fas fa-exclamation-triangle"></i>
+
+                        {% elif category == "info" %}
+                            <i class="fas fa-info-circle"></i>
+
+                        {% else %}
+                            <i class="fas fa-bell"></i>
+
+                        {% endif %}
+
+                    </div>
+
+                    <div class="flash-text">
+
+                        {{ message }}
+
+                    </div>
+
+                    <button
+                        class="flash-close"
+                        onclick="this.parentElement.remove();">
+
+                        <i class="fas fa-times"></i>
+
+                    </button>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% endif %}
+
+{% endwith %}
+
+
+<style>
+
+.flash-container{
+
+    position:fixed;
+
+    top:20px;
+
+    right:20px;
+
+    width:420px;
+
+    z-index:99999;
+
+}
+
+.flash-message{
+
+    display:flex;
+
+    align-items:center;
+
+    padding:15px 18px;
+
+    margin-bottom:15px;
+
+    border-radius:8px;
+
+    color:#fff;
+
+    font-weight:500;
+
+    box-shadow:0 8px 20px rgba(0,0,0,.2);
+
+    animation:slideIn .4s ease;
+
+}
+
+.flash-icon{
+
+    margin-right:15px;
+
+    font-size:22px;
+
+}
+
+.flash-text{
+
+    flex:1;
+
+}
+
+.flash-close{
+
+    border:none;
+
+    background:none;
+
+    color:white;
+
+    cursor:pointer;
+
+    font-size:18px;
+
+}
+
+.flash-success{
+
+    background:#28a745;
+
+}
+
+.flash-danger{
+
+    background:#dc3545;
+
+}
+
+.flash-warning{
+
+    background:#ffc107;
+
+    color:#222;
+
+}
+
+.flash-info{
+
+    background:#17a2b8;
+
+}
+
+.flash-primary{
+
+    background:#0d6efd;
+
+}
+
+@keyframes slideIn{
+
+    from{
+
+        opacity:0;
+
+        transform:translateX(100%);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateX(0);
+
+    }
+
+}
+
+.fade-out{
+
+    opacity:0;
+
+    transition:.6s;
+
+}
+
+</style>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function(){
+
+    document.querySelectorAll(".flash-message").forEach(function(msg){
+
+        setTimeout(function(){
+
+            msg.classList.add("fade-out");
+
+            setTimeout(function(){
+
+                if(msg){
+
+                    msg.remove();
+
+                }
+
+            },600);
+
+        },5000);
+
+    });
+
+});
+
+</script>

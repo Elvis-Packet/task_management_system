@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}
+My Assigned Tasks
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h2>
+
+            My Assigned Tasks
+
+        </h2>
+
+        <p>
+
+            View all tasks assigned to you by your manager.
+
+        </p>
+
+    </div>
+
+</div>
+
+<!-- ======================================================= -->
+
+<div class="dashboard-grid">
+
+    <div class="stat-card">
+
+        <h3>
+
+            {{ tasks|length }}
+
+        </h3>
+
+        <p>
+
+            Total Tasks
+
+        </p>
+
+    </div>
+
+    <div class="stat-card">
+
+        <h3>
+
+            {{ tasks|selectattr('status.name','equalto','PENDING')|list|length }}
+
+        </h3>
+
+        <p>
+
+            Pending
+
+        </p>
+
+    </div>
+
+    <div class="stat-card">
+
+        <h3>
+
+            {{ tasks|selectattr('status.name','equalto','UNDER_REVIEW')|list|length }}
+
+        </h3>
+
+        <p>
+
+            Under Review
+
+        </p>
+
+    </div>
+
+    <div class="stat-card">
+
+        <h3>
+
+            {{ tasks|selectattr('status.name','equalto','VERIFIED')|list|length }}
+
+        </h3>
+
+        <p>
+
+            Verified
+
+        </p>
+
+    </div>
+
+</div>
+
+<br>
+
+<!-- ======================================================= -->
+
+<div class="card">
+
+    <div class="card-header">
+
+        <h3>
+
+            Assigned Tasks
+
+        </h3>
+
+    </div>
+
+    <div class="card-body">
+
+        {% if tasks %}
+
+        <div style="overflow-x:auto;">
+
+        <table class="table table-hover">
+
+            <thead>
+
+                <tr>
+
+                    <th>#</th>
+
+                    <th>Title</th>
+
+                    <th>Assigned By</th>
+
+                    <th>Priority</th>
+
+                    <th>Due Date</th>
+
+                    <th>Status</th>
+
+                    <th>Actions</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for task in tasks %}
+
+                <tr>
+
+                    <td>
+
+                        {{ loop.index }}
+
+                    </td>
+
+                    <td>
+
+                        <strong>
+
+                            {{ task.title }}
+
+                        </strong>
+
+                        <br>
+
+                        <small class="text-muted">
+
+                            {{ task.description[:60] if task.description else "-" }}
+
+                            {% if task.description and task.description|length > 60 %}
+
+                                ...
+
+                            {% endif %}
+
+                        </small>
+
+                    </td>
+
+                    <td>
+
+                        {{ task.manager.full_name }}
+
+                    </td>
+
+                    <td>
+
+                        {{ task.priority.value }}
+
+                    </td>
+
+                    <td>
+
+                        {{ task.due_date }}
+
+                    </td>
+
+                    <td>
+
+                        {% if task.status.name == "PENDING" %}
+
+                            <span class="badge bg-warning">
+
+                                Pending
+
+                            </span>
+
+                        {% elif task.status.name == "IN_PROGRESS" %}
+
+                            <span class="badge bg-info">
+
+                                In Progress
+
+                            </span>
+
+                        {% elif task.status.name == "UNDER_REVIEW" %}
+
+                            <span class="badge bg-primary">
+
+                                Under Review
+
+                            </span>
+
+                        {% elif task.status.name == "VERIFIED" %}
+
+                            <span class="badge bg-success">
+
+                                Verified
+
+                            </span>
+
+                        {% elif task.status.name == "RETURNED" %}
+
+                            <span class="badge bg-danger">
+
+                                Returned
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-secondary">
+
+                                {{ task.status.value }}
+
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        <div style="display:flex;gap:6px;flex-wrap:nowrap;">
+
+                            <a href="{{ url_for('assigned_task.view',
+                                task_id=task.id) }}"
+                               class="btn btn-sm btn-primary">
+
+                                <i class="fas fa-eye"></i>
+
+                            </a>
+
+                            {% if task.status.name in ["PENDING", "IN_PROGRESS"] %}
+
+                            <form
+                                action="{{ url_for('assigned_task.complete', task_id=task.id) }}"
+                                method="POST"
+                                style="display:inline;">
+
+                                <button
+                                    type="submit"
+                                    class="btn btn-sm btn-success"
+                                    title="Mark Task as Completed"
+                                    onclick="return confirm('Are you sure you have completed this task?');">
+
+                                    <i class="fas fa-check-circle"></i>
+
+                                </button>
+
+                            </form>
+
+                            {% endif %}
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-state">
+
+            <i class="fas fa-tasks fa-4x"></i>
+
+            <h3>
+
+                No Assigned Tasks
+
+            </h3>
+
+            <p>
+
+                Your manager has not assigned any work to you yet.
+
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,507 @@
+{% extends "base.html" %}
+
+{% block title %}
+Task Details
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h2>
+
+            Task Details
+
+        </h2>
+
+        <p>
+
+            View the complete assignment information.
+
+        </p>
+
+    </div>
+
+    <div>
+
+            {% if current_user.role.name == "EMPLOYEE" %}
+
+            <a href="{{ url_for('assigned_task.my_tasks') }}"
+            class="btn btn-secondary">
+
+                <i class="fas fa-arrow-left"></i>
+
+                Back
+
+            </a>
+
+            {% else %}
+
+            <a href="{{ url_for('assigned_task.index') }}"
+            class="btn btn-secondary">
+
+                <i class="fas fa-arrow-left"></i>
+
+                Back
+
+            </a>
+
+            {% endif %}
+
+        <a href="{{ url_for('assigned_task.edit', task_id=task.id) }}"
+           class="btn btn-warning">
+
+            <i class="fas fa-edit"></i>
+
+            Edit
+
+        </a>
+                {% if current_user.role.name == "OPERATIONS_MANAGER" 
+                    and task.status.name == "COMPLETED" %}
+
+
+                <a href="{{ url_for(
+                    'assigned_task.verify',
+                    task_id=task.id
+                ) }}"
+                class="btn btn-success">
+
+
+                <i class="fas fa-check-circle"></i>
+
+                Approve Task
+
+
+                </a>
+
+
+                {% endif %}
+    </div>
+
+</div>
+
+<div class="dashboard-grid">
+
+    <div class="stat-card">
+
+        <h3>{{ task.priority.value }}</h3>
+
+        <p>Priority</p>
+
+    </div>
+
+    <div class="stat-card">
+
+        <h3>{{ task.status.value }}</h3>
+
+        <p>Status</p>
+
+    </div>
+
+    <div class="stat-card">
+
+        <h3>
+
+            {% if task.acknowledged %}
+
+                Yes
+
+            {% else %}
+
+                No
+
+            {% endif %}
+
+        </h3>
+
+        <p>Acknowledged</p>
+
+    </div>
+
+    <div class="stat-card">
+
+        <h3>
+
+            {% if task.is_overdue %}
+
+                Overdue
+
+            {% else %}
+
+                Active
+
+            {% endif %}
+
+        </h3>
+
+        <p>Task State</p>
+
+    </div>
+
+</div>
+
+<br>
+
+<div class="card">
+
+    <div class="card-header">
+
+        <h3>
+
+            Assignment Information
+
+        </h3>
+
+    </div>
+
+    <div class="card-body">
+
+        <table class="table">
+
+            <tr>
+
+                <th width="250">
+
+                    Employee
+
+                </th>
+
+                <td>
+
+                    {{ task.employee.full_name }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Manager
+
+                </th>
+
+                <td>
+
+                    {{ task.manager.full_name }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Task Title
+
+                </th>
+
+                <td>
+
+                    {{ task.title }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Description
+
+                </th>
+
+                <td>
+
+                    {{ task.description or "-" }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Assigned Date
+
+                </th>
+
+                <td>
+
+                    {{ task.assigned_date }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Assigned Time
+
+                </th>
+
+                <td>
+
+                    {{ task.assigned_time }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Due Date
+
+                </th>
+
+                <td>
+
+                    {{ task.due_date }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Due Time
+
+                </th>
+
+                <td>
+
+                    {{ task.due_time or "-" }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Priority
+
+                </th>
+
+                <td>
+
+                    {{ task.priority.value }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Status
+
+                </th>
+
+                <td>
+
+                    {{ task.status.value }}
+
+                </td>
+
+            </tr>
+
+        </table>
+
+    </div>
+
+</div>
+
+<br>
+
+<div class="card">
+
+    <div class="card-header">
+
+        <h3>
+
+            Related Weekly Activity
+
+        </h3>
+
+    </div>
+
+    <div class="card-body">
+
+        {% if task.related_activity %}
+
+        <table class="table">
+
+            <tr>
+
+                <th width="250">
+
+                    Activity
+
+                </th>
+
+                <td>
+
+                    {{ task.related_activity.title }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Activity Date
+
+                </th>
+
+                <td>
+
+                    {{ task.related_activity.activity_date }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Weekly Plan
+
+                </th>
+
+                <td>
+
+                    Week {{ task.related_activity.plan.week_number }}
+
+                </td>
+
+            </tr>
+
+        </table>
+
+        {% else %}
+
+        <div class="empty-state">
+
+            <i class="fas fa-link fa-3x"></i>
+
+            <h4>
+
+                No Related Activity
+
+            </h4>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+<br>
+
+<div class="card">
+
+    <div class="card-header">
+
+        <h3>
+
+            Verification
+
+        </h3>
+
+    </div>
+
+    <div class="card-body">
+
+        <table class="table">
+
+            <tr>
+
+                <th width="250">
+
+                    Verified By
+
+                </th>
+
+                <td>
+
+                    {{ task.verifier.full_name if task.verifier else "-" }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Verified At
+
+                </th>
+
+                <td>
+
+                    {{ task.verified_at or "-" }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Verification Notes
+
+                </th>
+
+                <td>
+
+                    {{ task.verification_notes or "-" }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Completed At
+
+                </th>
+
+                <td>
+
+                    {{ task.completed_at or "-" }}
+
+                </td>
+
+            </tr>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

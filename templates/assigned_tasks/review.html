@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Review Assigned Task</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css">
+
+</head>
+
+<body>
+
+<div class="container mt-4">
+
+    <div class="card shadow">
+
+        <div class="card-header bg-primary text-white">
+
+            <h4>
+
+                <i class="fas fa-user-check"></i>
+
+                Assigned Task Evaluation
+
+            </h4>
+
+        </div>
+
+        <div class="card-body">
+
+            <table class="table table-bordered">
+
+                <tr>
+
+                    <th width="220">
+
+                        Employee
+
+                    </th>
+
+                    <td>
+
+                        {{ task.employee.employee_number }}
+
+                        -
+
+                        {{ task.employee.full_name }}
+
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <th>
+
+                        Task
+
+                    </th>
+
+                    <td>
+
+                        {{ task.title }}
+
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <th>
+
+                        Description
+
+                    </th>
+
+                    <td>
+
+                        {{ task.description }}
+
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <th>
+
+                        Completion Notes
+
+                    </th>
+
+                    <td>
+
+                        {{ task.completion_notes }}
+
+                    </td>
+
+                </tr>
+
+            </table>
+
+            <form method="POST">
+
+                <div class="row">
+
+                    <div class="col-md-6">
+
+                        <label>
+
+                            Work Quality
+
+                        </label>
+
+                        <select
+                            name="quality_rating"
+                            class="form-control"
+                            required>
+
+                            {% for i in range(1,6) %}
+
+                            <option value="{{ i }}">
+
+                                {{ i }} / 5
+
+                            </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label>
+
+                            Timeliness
+
+                        </label>
+
+                        <select
+                            name="timeliness_rating"
+                            class="form-control"
+                            required>
+
+                            {% for i in range(1,6) %}
+
+                            <option value="{{ i }}">
+
+                                {{ i }} / 5
+
+                            </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+                <br>
+
+                <div class="form-group">
+
+                    <label>
+
+                        Manager Feedback
+
+                    </label>
+
+                    <textarea
+                        name="feedback"
+                        rows="4"
+                        class="form-control"
+                        placeholder="Write your evaluation here..."></textarea>
+
+                </div>
+
+                <br>
+
+                <div class="form-group">
+
+                    <label>
+
+                        Decision
+
+                    </label>
+
+                    <select
+                        name="decision"
+                        class="form-control">
+
+                        <option value="approve">
+
+                            Approve Task
+
+                        </option>
+
+                        <option value="return">
+
+                            Return To Employee
+
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <br>
+
+                <div class="d-flex justify-content-between">
+
+                    <a href="{{ url_for('assigned_task.review_queue') }}"
+                       class="btn btn-secondary">
+
+                        <i class="fas fa-arrow-left"></i>
+
+                        Back
+
+                    </a>
+
+                    <button
+                        type="submit"
+                        class="btn btn-success">
+
+                        <i class="fas fa-check-circle"></i>
+
+                        Submit Review
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

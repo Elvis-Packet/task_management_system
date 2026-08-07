@@ -1,0 +1,112 @@
+{% if breadcrumbs %}
+
+
+<nav aria-label="breadcrumb"
+     class="custom-breadcrumb">
+
+
+<ol class="breadcrumb">
+
+
+<li class="breadcrumb-item">
+
+<a href="{{ url_for('dashboard.admin_dashboard') }}">
+
+<i class="fas fa-home"></i>
+
+Home
+
+</a>
+
+</li>
+
+
+
+{% for item in breadcrumbs %}
+
+
+{% if loop.last %}
+
+
+<li class="breadcrumb-item active">
+
+{{ item.name }}
+
+</li>
+
+
+{% else %}
+
+
+<li class="breadcrumb-item">
+
+<a href="{{ item.url }}">
+
+{{ item.name }}
+
+</a>
+
+</li>
+
+
+{% endif %}
+
+
+
+{% endfor %}
+
+
+</ol>
+
+
+</nav>
+
+
+{% endif %}
+
+
+
+<style>
+
+.custom-breadcrumb {
+
+    background:white;
+
+    padding:12px 20px;
+
+    border-radius:10px;
+
+    margin-bottom:20px;
+
+    box-shadow:
+    0 2px 6px rgba(0,0,0,.05);
+
+}
+
+
+
+.breadcrumb {
+
+    margin:0;
+
+}
+
+
+.breadcrumb-item a{
+
+    text-decoration:none;
+
+    color:#2563eb;
+
+}
+
+
+
+.breadcrumb-item.active{
+
+    color:#6b7280;
+
+}
+
+
+</style>

@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}
+Assign Task
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h2>
+
+            Assign New Task
+
+        </h2>
+
+        <p>
+
+            Create and assign a new task to an employee.
+
+        </p>
+
+    </div>
+
+    <div>
+
+        <a href="{{ url_for('assigned_task.index') }}"
+           class="btn btn-secondary">
+
+            <i class="fas fa-arrow-left"></i>
+
+            Back
+
+        </a>
+
+    </div>
+
+</div>
+
+<form method="POST">
+
+<div class="card">
+
+    <div class="card-header">
+
+        <h3>
+
+            Assignment Details
+
+        </h3>
+
+    </div>
+
+    <div class="card-body">
+
+        <div class="row">
+
+            <div class="col-md-6">
+
+                <div class="form-group">
+
+                    <label>
+
+                        Employee
+
+                    </label>
+
+                    <select
+                        name="employee_id"
+                        class="form-control"
+                        required>
+
+                        <option value="">
+
+                            -- Select Employee --
+
+                        {% for employee in employees %}
+
+                        <option value="{{ employee.id }}">
+
+                            {{ employee.employee_number }}
+                            -
+                            {{ employee.full_name }}
+
+                        </option>
+
+                        {% endfor %}
+                    </select>
+                </div>
+
+            </div>
+
+            <div class="col-md-6">
+
+                <div class="form-group">
+
+                    <label>
+
+                        Priority
+
+                    </label>
+
+                    <select
+                        name="priority"
+                        class="form-control"
+                        required>
+
+                        {% for priority in priorities %}
+
+                        <option value="{{ priority.name }}">
+                            {{ priority.value }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <br>
+
+        <div class="form-group">
+
+            <label>
+
+                Task Title
+
+            </label>
+
+            <input
+                type="text"
+                name="title"
+                class="form-control"
+                required>
+
+        </div>
+
+        <br>
+
+        <div class="form-group">
+
+            <label>
+
+                Description
+
+            </label>
+
+            <textarea
+                name="description"
+                rows="5"
+                class="form-control"></textarea>
+
+        </div>
+
+        <br>
+
+        <div class="row">
+
+            <div class="col-md-6">
+
+                <div class="form-group">
+
+                    <label>
+
+                        Due Date
+
+                    </label>
+
+                    <input
+                        type="date"
+                        name="due_date"
+                        class="form-control"
+                        required>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-6">
+
+                <div class="form-group">
+
+                    <label>
+
+                        Due Time
+
+                    </label>
+
+                    <input
+                        type="time"
+                        name="due_time"
+                        class="form-control">
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <br>
+
+        <div class="form-group">
+
+            <label>
+
+                Related Weekly Activity (Optional)
+
+            </label>
+
+            <select
+                name="related_activity_id"
+                class="form-control">
+
+                <option value="">
+
+                    None
+
+                </option>
+
+                {% if activities %}
+
+                    {% for activity in activities %}
+
+                    <option value="{{ activity.id }}">
+
+                        {{ activity.title }}
+                        -
+                        {{ activity.plan.employee.department.name }}
+
+                    </option>
+
+                    {% endfor %}
+
+                {% endif %}
+
+            </select>
+
+            <small class="text-muted">
+
+                Link this assignment to an existing weekly plan activity if applicable.
+
+            </small>
+
+        </div>
+
+    </div>
+
+</div>
+
+<br>
+
+<div class="card">
+
+    <div class="card-header">
+
+        <h3>
+
+            Assignment Summary
+
+        </h3>
+
+    </div>
+
+    <div class="card-body">
+
+        <table class="table">
+
+            <tr>
+
+                <th width="220">
+
+                    Assigned By
+
+                </th>
+
+                <td>
+
+                    {{ current_user.full_name }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Department
+
+                </th>
+
+                <td>
+
+                    {{ current_user.department.name if current_user.department else "-" }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <th>
+
+                    Assignment Date
+
+                </th>
+
+                <td>
+
+                    {{ moment().format('YYYY-MM-DD') if moment else "Today" }}
+
+                </td>
+
+            </tr>
+
+        </table>
+
+    </div>
+
+</div>
+
+<br>
+
+<div class="text-end">
+
+    <a href="{{ url_for('assigned_task.index') }}"
+       class="btn btn-secondary">
+
+        Cancel
+
+    </a>
+
+    <button
+        type="submit"
+        class="btn btn-primary">
+
+        <i class="fas fa-paper-plane"></i>
+
+        Assign Task
+
+    </button>
+
+</div>
+
+</form>
+
+{% endblock %}
