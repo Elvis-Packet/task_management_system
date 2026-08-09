@@ -1,0 +1,42 @@
+databases:
+  - name: survitec-db
+    plan: free
+
+services:
+  - type: web
+    name: survitec-backend
+    runtime: python
+    rootDir: task_management_system
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: flask db upgrade && gunicorn --bind 0.0.0.0:$PORT app:app
+    envVars:
+      - key: FLASK_APP
+        value: app.py
+      - key: DATABASE_URL
+        fromDatabase:
+          name: survitec-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ACCESS_TOKEN_EXPIRES_MINUTES
+        value: "60"
+      - key: JWT_REFRESH_TOKEN_EXPIRES_DAYS
+        value: "30"
+      # Set this to your Vercel frontend URL once it's deployed
+      # (e.g. https://survitec-x-dahawi.vercel.app). Comma-separate
+      # multiple origins if you add a custom domain later.
+      - key: CORS_ORIGINS
+        value: http://localhost:5173
+      # Set these in the Render dashboard (Environment tab) instead of
+      # here — real account credentials should never be committed.
+      - key: SEED_SUPER_ADMIN_EMAIL
+        sync: false
+      - key: SEED_SUPER_ADMIN_PASSWORD
+        sync: false
+      - key: SEED_MANAGER_EMAIL
+        sync: false
+      - key: SEED_MANAGER_PASSWORD
+        sync: false

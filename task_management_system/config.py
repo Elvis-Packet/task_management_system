@@ -16,6 +16,11 @@ if not DATABASE_URL:
         "copy .env.example to .env and set DATABASE_URL. There is no SQLite fallback."
     )
 
+# Some hosts (Render, old Heroku-style connection strings) hand out
+# "postgres://" — SQLAlchemy 1.4+/2.0 only recognizes "postgresql://".
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 
 class Config:
 
