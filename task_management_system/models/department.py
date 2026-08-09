@@ -14,6 +14,8 @@ class Department(db.Model):
 
     description = db.Column(db.Text)
 
+    budget = db.Column(db.Numeric(14, 2), default=0)
+
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow

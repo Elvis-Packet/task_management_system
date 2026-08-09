@@ -1,20 +1,14 @@
 from datetime import datetime
 
-from flask_login import UserMixin
-
-from werkzeug.security import (
-    generate_password_hash,
-    check_password_hash
-)
-
-from extensions import db
+from extensions import db, bcrypt
 
 from models.enums import (
     UserRole,
     UserStatus
 )
 
-class User(UserMixin, db.Model):
+
+class User(db.Model):
 
     __tablename__ = "users"
 
@@ -66,7 +60,7 @@ class User(UserMixin, db.Model):
 
     role = db.Column(
         db.Enum(UserRole),
-        default=UserRole.EMPLOYEE,
+        default=UserRole.STAFF,
         nullable=False
     )
 
@@ -93,6 +87,18 @@ class User(UserMixin, db.Model):
     created_by = db.Column(
         db.Integer,
         db.ForeignKey("users.id")
+    )
+
+    deleted_at = db.Column(
+        db.DateTime
+    )
+
+    reset_token_hash = db.Column(
+        db.String(255)
+    )
+
+    reset_token_expires_at = db.Column(
+        db.DateTime
     )
 
     department = db.relationship(
@@ -122,57 +128,6 @@ class User(UserMixin, db.Model):
         lazy=True
     )
 
-
-
-    # audit_logs = db.relationship(
-    #     "AuditLog",
-    #     foreign_keys="AuditLog.user_id",
-    #     back_populates="user"
-    # )
-
-    # login_history = db.relationship(
-    #     "LoginHistory",
-    #     back_populates="user",
-    #     cascade="all, delete-orphan"
-    # )
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(
-            self.password_hash,
-            password
-        )
-
-    @property
-    def full_name(self):
-        return " ".join(
-            filter(
-                None,
-                [
-                    self.first_name,
-                    self.middle_name,
-                    self.last_name
-                ]
-            )
-        )
-
-    @property
-    def is_super_admin(self):
-        return self.role == UserRole.SUPER_ADMIN
-
-    @property
-    def is_manager(self):
-        return self.role == UserRole.OPERATIONS_MANAGER
-
-    @property
-    def is_employee(self):
-        return self.role == UserRole.EMPLOYEE
-
-    def __repr__(self):
-        return f"<User {self.employee_number} - {self.full_name}>"
-
     notifications_received = db.relationship(
         "Notification",
         foreign_keys="Notification.recipient_id",
@@ -186,6 +141,25 @@ class User(UserMixin, db.Model):
         foreign_keys="Notification.sender_id",
         back_populates="sender",
         lazy="dynamic"
+    )
+
+    audit_logs = db.relationship(
+        "AuditLog",
+        foreign_keys="AuditLog.user_id",
+        back_populates="user"
+    )
+
+    login_history = db.relationship(
+        "LoginHistory",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    performance = db.relationship(
+        "Performance",
+        back_populates="employee",
+        uselist=False,
+        cascade="all, delete-orphan"
     )
 
     failed_login_attempts = db.Column(
@@ -220,9 +194,40 @@ class User(UserMixin, db.Model):
         nullable=False
     )
 
+    def set_password(self, password):
+        self.password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
+
+    def check_password(self, password):
+        return bcrypt.check_password_hash(self.password_hash, password)
+
+    @property
+    def full_name(self):
+        return " ".join(
+            filter(
+                None,
+                [
+                    self.first_name,
+                    self.middle_name,
+                    self.last_name
+                ]
+            )
+        )
+
+    @property
+    def is_super_admin(self):
+        return self.role == UserRole.SUPER_ADMIN
+
+    @property
+    def is_manager(self):
+        return self.role == UserRole.OPERATIONAL_MANAGER
+
+    @property
+    def is_staff(self):
+        return self.role == UserRole.STAFF
+
     @property
     def is_active(self):
-        return self.status == UserStatus.ACTIVE
+        return self.status == UserStatus.ACTIVE and self.deleted_at is None
 
     @property
     def is_locked(self):
@@ -232,45 +237,9 @@ class User(UserMixin, db.Model):
     def is_inactive(self):
         return self.status == UserStatus.INACTIVE
 
-    # def mark_as_read(self):
+    @property
+    def is_deleted(self):
+        return self.deleted_at is not None
 
-    #     self.read = True
-
-    #     self.read_at = datetime.utcnow()
-
-    # def archive(self):
-
-    #     self.archived = True
-
-    #     self.archived_at = datetime.utcnow()
-
-    # def mark_email_sent(self):
-
-    #     self.email_sent = True
-
-    #     self.email_sent_at = datetime.utcnow()
-
-    # def __repr__(self):
-
-    #     return (
-    #         f"<Notification {self.title}>"
-    #     )
-
-    # __table_args__ = (
-
-    #     db.Index(
-    #         "idx_notification_recipient",
-    #         "recipient_id"
-    #     ),
-
-    #     db.Index(
-    #         "idx_notification_read",
-    #         "read"
-    #     ),
-
-    #     db.Index(
-    #         "idx_notification_created",
-    #         "created_at"
-    #     ),
-
-    # )
+    def __repr__(self):
+        return f"<User {self.employee_number} - {self.full_name}>"

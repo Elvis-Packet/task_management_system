@@ -89,13 +89,6 @@ class Performance(db.Model):
         back_populates="performance"
     )
 
-    performance = db.relationship(
-        "Performance",
-        back_populates="employee",
-        uselist=False,
-        cascade="all, delete-orphan"
-    )
-
     @property
     def completion_rate(self):
         if self.total_activities == 0:

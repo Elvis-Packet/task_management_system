@@ -7,8 +7,8 @@ from enum import Enum
 
 class UserRole(Enum):
     SUPER_ADMIN = "SUPER_ADMIN"
-    OPERATIONS_MANAGER = "OPERATIONS_MANAGER"
-    EMPLOYEE = "EMPLOYEE"
+    OPERATIONAL_MANAGER = "OPERATIONAL_MANAGER"
+    STAFF = "STAFF"
 
 
 class UserStatus(Enum):
@@ -25,6 +25,8 @@ class PlanStatus(Enum):
     DRAFT = "DRAFT"
     SUBMITTED = "SUBMITTED"
     ACTIVE = "ACTIVE"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
     COMPLETED = "COMPLETED"
     ARCHIVED = "ARCHIVED"
 
@@ -47,23 +49,14 @@ class TaskPriority(Enum):
 # ==========================================================
 
 class TaskStatus(Enum):
+    SUBMITTED = "SUBMITTED"
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     VERIFIED = "VERIFIED"
+    REJECTED = "REJECTED"
     CANCELLED = "CANCELLED"
     OVERDUE = "OVERDUE"
-
-
-# ==========================================================
-# EMPLOYEE ACTIVITY STATUS
-# Used by Activity model
-# ==========================================================
-
-class EmployeeStatus(Enum):
-    PENDING = "PENDING"
-    COMPLETED = "COMPLETED"
-    NOT_COMPLETED = "NOT_COMPLETED"
 
 
 # ==========================================================
@@ -112,6 +105,7 @@ class NotificationType(Enum):
     REMINDER = "REMINDER"
     SECURITY = "SECURITY"
     ANNOUNCEMENT = "ANNOUNCEMENT"
+    COMMENT = "COMMENT"
 
 
 class NotificationPriority(Enum):
@@ -127,20 +121,60 @@ class NotificationDeliveryStatus(Enum):
     DELIVERED = "DELIVERED"
     FAILED = "FAILED"
 
-class AssignmentStatus(Enum):
-    PENDING = "PENDING"
-    ACCEPTED = "ACCEPTED"
-    COMPLETED = "COMPLETED"
-    VERIFIED = "VERIFIED"
-    REJECTED = "REJECTED"
+
+# ==========================================================
+# AUDIT
+# ==========================================================
 
 class AuditAction(Enum):
     LOGIN = "LOGIN"
+    LOGIN_FAILED = "LOGIN_FAILED"
     LOGOUT = "LOGOUT"
     CREATE = "CREATE"
     UPDATE = "UPDATE"
     DELETE = "DELETE"
+    SUSPEND = "SUSPEND"
+    ACTIVATE = "ACTIVATE"
+    RESET_PASSWORD = "RESET_PASSWORD"
     VERIFY = "VERIFY"
+    REJECT = "REJECT"
     ASSIGN_TASK = "ASSIGN_TASK"
     SUBMIT_PLAN = "SUBMIT_PLAN"
     REVIEW_PLAN = "REVIEW_PLAN"
+    COMMENT = "COMMENT"
+
+
+# ==========================================================
+# COMMENTS
+# ==========================================================
+
+class CommentTargetType(Enum):
+    TASK = "TASK"
+    WEEKLY_PLAN = "WEEKLY_PLAN"
+    REPORT = "REPORT"
+    ACTIVITY = "ACTIVITY"
+
+
+# ==========================================================
+# NON-COMPLETION / OVERDUE EXCEPTION HANDLING
+# Recorded by a manager against a specific task — append-only,
+# never overwrites the task's own history.
+# ==========================================================
+
+class NonCompletionReasonCategory(Enum):
+    CUSTOMER_DELAY = "CUSTOMER_DELAY"
+    SYSTEM_DOWNTIME = "SYSTEM_DOWNTIME"
+    AWAITING_APPROVAL = "AWAITING_APPROVAL"
+    INSUFFICIENT_RESOURCES = "INSUFFICIENT_RESOURCES"
+    STAFF_UNAVAILABLE = "STAFF_UNAVAILABLE"
+    EXTERNAL_DEPENDENCY = "EXTERNAL_DEPENDENCY"
+    EMERGENCY = "EMERGENCY"
+    OTHER = "OTHER"
+
+
+class TaskResolution(Enum):
+    RESCHEDULED = "RESCHEDULED"
+    PENDING_DEPENDENCY = "PENDING_DEPENDENCY"
+    ESCALATED = "ESCALATED"
+    WAIVED = "WAIVED"
+    CONTINUE_MONITORING = "CONTINUE_MONITORING"

@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 from dotenv import load_dotenv
 
@@ -7,25 +8,40 @@ load_dotenv()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-INSTANCE_DIR = os.path.join(BASE_DIR, "instance")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-os.makedirs(INSTANCE_DIR, exist_ok=True)
-
-DATABASE_PATH = os.path.join(
-    INSTANCE_DIR,
-    os.getenv("DATABASE_NAME", "database.db")
-)
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL is not set. This application requires PostgreSQL — "
+        "copy .env.example to .env and set DATABASE_URL. There is no SQLite fallback."
+    )
 
 
 class Config:
 
     SECRET_KEY = os.getenv("SECRET_KEY")
 
-    SQLALCHEMY_DATABASE_URI = f"sqlite:///{DATABASE_PATH}"
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    MAIL_SERVER = os.getenv("MAIL_SERVER")
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(
+        minutes=int(os.getenv("JWT_ACCESS_TOKEN_EXPIRES_MINUTES", 60))
+    )
+
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(
+        days=int(os.getenv("JWT_REFRESH_TOKEN_EXPIRES_DAYS", 30))
+    )
+
+    CORS_ORIGINS = [
+        origin.strip()
+        for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+        if origin.strip()
+    ]
+
+    MAIL_SERVER = os.getenv("MAIL_SERVER") or None
 
     MAIL_PORT = int(os.getenv("MAIL_PORT", 465))
 
@@ -33,12 +49,20 @@ class Config:
 
     MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "False") == "True"
 
-    MAIL_USERNAME = os.getenv("MAIL_USERNAME")
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME") or None
 
-    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD") or None
 
-    MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER")
+    MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER") or None
 
-    APP_NAME = os.getenv("APP_NAME")
+    APP_NAME = os.getenv("APP_NAME", "Survitec Task Performance Management System")
 
-    APP_VERSION = os.getenv("APP_VERSION")
+    APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
+
+    SEED_SUPER_ADMIN_EMAIL = os.getenv("SEED_SUPER_ADMIN_EMAIL")
+
+    SEED_SUPER_ADMIN_PASSWORD = os.getenv("SEED_SUPER_ADMIN_PASSWORD")
+
+    SEED_MANAGER_EMAIL = os.getenv("SEED_MANAGER_EMAIL")
+
+    SEED_MANAGER_PASSWORD = os.getenv("SEED_MANAGER_PASSWORD")
