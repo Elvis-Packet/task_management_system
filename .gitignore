@@ -6,3 +6,5 @@ venv/
 instance/
 migrations/versions/*.pyc
 *.log
+*.db
+*.sqlite3

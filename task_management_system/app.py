@@ -1,6 +1,7 @@
 import os
 
 from flask import Flask, jsonify
+from werkzeug.exceptions import HTTPException
 
 from config import Config
 
@@ -114,7 +115,7 @@ app.register_blueprint(audit_bp, url_prefix=f"{API_PREFIX}/audit")
 
 @app.get(f"{API_PREFIX}/health")
 def health():
-    return jsonify({"success": True, "message": "ok", "data": {"app": Config.APP_NAME}})
+    return jsonify({"success": True, "message": "API is healthy", "data": {"app": Config.APP_NAME}})
 
 
 # =====================================================
@@ -133,6 +134,23 @@ def method_not_allowed(e):
 
 @app.errorhandler(500)
 def server_error(e):
+    return jsonify({"success": False, "message": "Internal server error.", "errors": None}), 500
+
+
+@app.errorhandler(HTTPException)
+def handle_http_exception(e):
+    """Catch-all for any werkzeug HTTPException not covered by a specific
+    handler above (400/403/409/422/etc. raised outside utils.response.err) —
+    every API error stays JSON, never Flask/Werkzeug's default HTML page."""
+    return jsonify({"success": False, "message": e.description or e.name, "errors": None}), e.code
+
+
+@app.errorhandler(Exception)
+def handle_unexpected_error(e):
+    """Last-resort net for a genuinely unhandled exception (a real bug). No
+    traceback or exception detail ever reaches the client — only logged
+    server-side — so nothing internal ever leaks over the API."""
+    app.logger.exception("Unhandled exception")
     return jsonify({"success": False, "message": "Internal server error.", "errors": None}), 500
 
 

@@ -154,7 +154,6 @@ class ReportService:
             "tasks_completed_this_month": tasks_completed_this_month,
             "tasks_pending": tasks_pending,
             "plans_approved_rate": _pct(approved, len(reviewed_plans)),
-            "open_incidents": 0,
         }
 
     @staticmethod
