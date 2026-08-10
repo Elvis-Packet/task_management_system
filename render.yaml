@@ -26,11 +26,10 @@ services:
         value: "60"
       - key: JWT_REFRESH_TOKEN_EXPIRES_DAYS
         value: "30"
-      # Set this to your Vercel frontend URL once it's deployed
-      # (e.g. https://survitec-x-dahawi.vercel.app). Comma-separate
-      # multiple origins if you add a custom domain later.
+      # Comma-separate additional origins here if you add a custom
+      # domain later.
       - key: CORS_ORIGINS
-        value: http://localhost:5173
+        value: https://survitec-x-dahawi.vercel.app
       # Set these in the Render dashboard (Environment tab) instead of
       # here — real account credentials should never be committed.
       - key: SEED_SUPER_ADMIN_EMAIL
