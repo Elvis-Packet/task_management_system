@@ -5,6 +5,7 @@ from models.department import Department
 from models.assigned_task import AssignedTask
 from models.weekly_plan import WeeklyPlan
 from models.enums import UserRole, UserStatus, TaskStatus, PlanStatus
+from utils.rbac import has_org_scope
 
 
 def _pct(numerator, denominator):
@@ -19,13 +20,14 @@ class DashboardService:
         self.user = user
 
     def _scope_staff(self):
+        """The staff whose numbers roll up into this user's dashboard. Every
+        org-scoped role (Super Admin, the central Manager, HR) sees the whole
+        organization; a staff member sees only themselves."""
+
         query = User.query.filter(User.role == UserRole.STAFF, User.deleted_at.is_(None))
 
-        if self.user.role == UserRole.STAFF:
+        if not has_org_scope(self.user):
             return query.filter(User.id == self.user.id).all()
-
-        if self.user.role == UserRole.OPERATIONAL_MANAGER:
-            return query.filter(User.department_id == self.user.department_id).all()
 
         return query.all()
 
@@ -88,7 +90,20 @@ class DashboardService:
             ).first()
             data["weekly_plan_status"] = own_plan.status.value.lower() if own_plan else None
 
-        if self.user.role == UserRole.SUPER_ADMIN:
+        # Outstanding manager queries the assignee hasn't answered — what the
+        # Manager dashboard chases and HR escalates on. Derived live from
+        # task_queries, never stored. A staff member sees only their own.
+        from models.task_query import TaskQuery
+        from models.enums import QueryStatus
+
+        open_queries = TaskQuery.query.filter(TaskQuery.status == QueryStatus.OPEN)
+
+        if not has_org_scope(self.user):
+            open_queries = open_queries.filter(TaskQuery.employee_id == self.user.id)
+
+        data["open_queries"] = open_queries.count()
+
+        if has_org_scope(self.user):
             month_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
             data.update({

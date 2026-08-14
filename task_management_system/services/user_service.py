@@ -6,10 +6,12 @@ from extensions import db
 from models.user import User
 from models.enums import UserRole, UserStatus
 from utils.enum_map import user_status_from_fe
+from utils.rbac import has_org_scope
 
 _ROLE_PREFIX = {
     UserRole.SUPER_ADMIN: "SA",
     UserRole.OPERATIONAL_MANAGER: "OM",
+    UserRole.HR: "HR",
     UserRole.STAFF: "STF",
 }
 
@@ -23,17 +25,15 @@ class UserService:
 
     @staticmethod
     def scoped_query(current_user):
-        """RBAC: STAFF never lists users; MANAGER sees only STAFF in their own
-        department; SUPER_ADMIN sees everyone. Soft-deleted users excluded by default."""
+        """RBAC: the org-scoped roles (SUPER_ADMIN, the central OPERATIONAL_
+        MANAGER, HR) see every user in the organization; everyone else — i.e.
+        STAFF — sees only their own record. Soft-deleted users are excluded
+        by default. Scope is decided by utils.rbac.has_org_scope() so this
+        rule is stated in exactly one place across the whole codebase."""
 
         query = User.query.filter(User.deleted_at.is_(None))
 
-        if current_user.role == UserRole.OPERATIONAL_MANAGER:
-            query = query.filter(
-                User.department_id == current_user.department_id,
-                User.role == UserRole.STAFF,
-            )
-        elif current_user.role == UserRole.STAFF:
+        if not has_org_scope(current_user):
             query = query.filter(User.id == current_user.id)
 
         return query
@@ -77,9 +77,11 @@ class UserService:
         user = User(
             employee_number=_next_employee_number(role),
             first_name=data["first_name"].strip(),
+            middle_name=(data.get("middle_name") or "").strip() or None,
             last_name=data["last_name"].strip(),
             email=data["email"].strip().lower(),
             phone=data.get("phone"),
+            job_title=(data.get("job_title") or "").strip() or None,
             role=role,
             department_id=data.get("department_id") or None,
             status=UserStatus.ACTIVE,
@@ -94,11 +96,35 @@ class UserService:
 
         return user
 
+    # Profile fields an authorized administrator may change on someone else's
+    # account. Deliberately excludes everything security-sensitive or
+    # system-owned: password_hash / reset_token_* (password changes go through
+    # AuthService's reset flow only), employee_number, id, created_by,
+    # created_at, deleted_at, failed_login_attempts and the last_* telemetry
+    # columns are all written by the system, never by a form.
+    EDITABLE_FIELDS = ("first_name", "middle_name", "last_name", "phone", "job_title", "profile_photo")
+
     @staticmethod
     def update_user(user, data):
-        for field in ("first_name", "last_name", "phone", "profile_photo"):
-            if field in data and data[field] is not None:
-                setattr(user, field, data[field].strip() if isinstance(data[field], str) else data[field])
+        """Applies an administrative edit. Authorization (may this actor touch
+        this account, may they change this role) is decided by the route via
+        utils.rbac before we ever get here — this method only writes."""
+
+        for field in UserService.EDITABLE_FIELDS:
+            if field not in data:
+                continue
+
+            value = data[field]
+
+            if isinstance(value, str):
+                value = value.strip() or None
+
+            # first_name/last_name are NOT NULL — an empty string in the form
+            # means "unchanged", never "wipe the name".
+            if value is None and field in ("first_name", "last_name"):
+                continue
+
+            setattr(user, field, value)
 
         if data.get("email"):
             user.email = data["email"].strip().lower()
@@ -108,6 +134,13 @@ class UserService:
 
         if "department_id" in data:
             user.department_id = data["department_id"] or None
+
+        if data.get("status"):
+            new_status = user_status_from_fe(data["status"], default=None)
+            if new_status is not None:
+                user.status = new_status
+                if new_status == UserStatus.ACTIVE:
+                    user.failed_login_attempts = 0
 
         db.session.commit()
 
@@ -133,9 +166,15 @@ class UserService:
         db.session.commit()
         return user
 
+    # What a user may change about themselves. Strictly narrower than
+    # EDITABLE_FIELDS: no role, no status, no department — those are
+    # administrative decisions, and letting a user set them on their own
+    # profile would be a self-service privilege escalation.
+    SELF_EDITABLE_FIELDS = ("first_name", "middle_name", "last_name", "phone", "profile_photo")
+
     @staticmethod
     def update_profile(user, data):
-        for field in ("first_name", "last_name", "phone", "profile_photo"):
+        for field in UserService.SELF_EDITABLE_FIELDS:
             if field in data and data[field] is not None:
                 setattr(user, field, data[field].strip() if isinstance(data[field], str) else data[field])
 

@@ -58,6 +58,13 @@ class User(db.Model):
         db.String(255)
     )
 
+    # Free-text position within the department ("Financial Analyst"), distinct
+    # from `role`, which is the system permission level. Nullable — every
+    # account predating this column simply has none.
+    job_title = db.Column(
+        db.String(120)
+    )
+
     role = db.Column(
         db.Enum(UserRole),
         default=UserRole.STAFF,
@@ -220,6 +227,10 @@ class User(db.Model):
     @property
     def is_manager(self):
         return self.role == UserRole.OPERATIONAL_MANAGER
+
+    @property
+    def is_hr(self):
+        return self.role == UserRole.HR
 
     @property
     def is_staff(self):

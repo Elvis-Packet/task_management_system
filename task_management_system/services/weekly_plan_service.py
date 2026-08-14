@@ -8,6 +8,7 @@ from models.weekly_plan import WeeklyPlan
 from models.activity import Activity
 from models.enums import UserRole, PlanStatus, ActivityStatus, VerificationStatus
 from utils.appdate import app_today
+from utils.rbac import has_org_scope
 
 DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -47,15 +48,13 @@ class WeeklyPlanService:
 
     @staticmethod
     def scoped_query(current_user):
+        """Same rule as every other scoped_query: org-scoped roles see every
+        department's plans, everyone else sees only their own."""
+
         query = WeeklyPlan.query
 
-        if current_user.role == UserRole.STAFF:
+        if not has_org_scope(current_user):
             return query.filter(WeeklyPlan.employee_id == current_user.id)
-
-        if current_user.role == UserRole.OPERATIONAL_MANAGER:
-            return query.join(User, WeeklyPlan.employee_id == User.id).filter(
-                User.department_id == current_user.department_id
-            )
 
         return query
 
@@ -191,12 +190,8 @@ class WeeklyPlanService:
             Activity.verification_status == VerificationStatus.PENDING,
         )
 
-        if current_user.role == UserRole.STAFF:
+        if not has_org_scope(current_user):
             query = query.filter(WeeklyPlan.employee_id == current_user.id)
-        elif current_user.role == UserRole.OPERATIONAL_MANAGER:
-            query = query.join(User, WeeklyPlan.employee_id == User.id).filter(
-                User.department_id == current_user.department_id
-            )
 
         return query.order_by(Activity.completed_at.desc()).all()
 
@@ -350,14 +345,11 @@ class WeeklyPlanService:
                 return "You can only edit your own weekly plan."
             return WeeklyPlanService.day_lock_reason(goal.activity_date, plan)
 
-        if current_user.role == UserRole.OPERATIONAL_MANAGER:
-            if not plan.employee or plan.employee.department_id != current_user.department_id:
-                return "You can only edit weekly plans for your own department."
-            if plan.status != PlanStatus.SUBMITTED:
-                return "You can only edit a weekly plan while it's awaiting your review."
-            return None
-
-        if current_user.role == UserRole.SUPER_ADMIN:
+        # The central Operational Manager and the Super Admin both oversee
+        # every department, so the only remaining constraint is the review
+        # window itself. HR has no editing rights here at all and falls
+        # through to the refusal below.
+        if current_user.role in (UserRole.OPERATIONAL_MANAGER, UserRole.SUPER_ADMIN):
             if plan.status != PlanStatus.SUBMITTED:
                 return "You can only edit a weekly plan while it's awaiting review."
             return None

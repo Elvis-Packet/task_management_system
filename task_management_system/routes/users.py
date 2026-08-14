@@ -9,7 +9,14 @@ from services.auth_service import AuthService
 from services.email_service import EmailService
 from services.audit_service import AuditService
 from utils.response import ok, err
-from utils.rbac import require_roles, get_current_user
+from utils.rbac import (
+    Permission,
+    require_roles,
+    require_permission,
+    get_current_user,
+    can_manage_user,
+    assert_role_change_allowed,
+)
 from utils.serializers import serialize_user
 from utils.pagination import paginate
 
@@ -35,8 +42,25 @@ def _clean_department_id(data):
 MANAGE_ROLES = (UserRole.SUPER_ADMIN, UserRole.OPERATIONAL_MANAGER)
 
 
+def _target_user(user_id):
+    return User.query.filter(User.id == user_id, User.deleted_at.is_(None)).first()
+
+
+def _guard(actor, target, permission):
+    """Both halves of the user-on-user check in one call: does the actor hold
+    the capability, and may they use it against this particular account.
+    Returns an error response to return immediately, or None."""
+
+    refusal = can_manage_user(actor, target, permission)
+
+    if refusal:
+        return err(refusal, 403)
+
+    return None
+
+
 @users_bp.get("")
-@require_roles(*MANAGE_ROLES)
+@require_permission(Permission.USER_VIEW)
 def list_users():
     current_user = get_current_user()
 
@@ -47,7 +71,7 @@ def list_users():
 
 
 @users_bp.get("/<int:user_id>")
-@require_roles(*MANAGE_ROLES)
+@require_permission(Permission.USER_VIEW)
 def get_user(user_id):
     current_user = get_current_user()
 
@@ -60,7 +84,7 @@ def get_user(user_id):
 
 
 @users_bp.post("")
-@require_roles(UserRole.SUPER_ADMIN)
+@require_permission(Permission.USER_CREATE)
 def create_user():
     current_user = get_current_user()
     data = request.get_json(silent=True) or {}
@@ -73,6 +97,12 @@ def create_user():
 
     if data["role"].upper() not in UserRole.__members__:
         return err("Invalid role.", 422, errors={"role": "invalid"})
+
+    # Minting a Super Admin is the one account creation that hands out more
+    # authority than the creator may hold, so it stays Super-Admin-only even
+    # though the Manager otherwise has full user-management parity.
+    if UserRole[data["role"].upper()] == UserRole.SUPER_ADMIN and current_user.role != UserRole.SUPER_ADMIN:
+        return err("Only a Super Admin can create another Super Admin account.", 403)
 
     if len(data["password"]) < 8:
         return err("Password must be at least 8 characters.", 422, errors={"password": "too_short"})
@@ -103,18 +133,40 @@ def update_profile():
 
 
 @users_bp.patch("/<int:user_id>")
-@require_roles(UserRole.SUPER_ADMIN)
+@require_permission(Permission.USER_EDIT)
 def update_user(user_id):
+    """Administrative edit of another account. Authorized for Super Admin and
+    the central Operational Manager; every field written is whitelisted in
+    UserService.EDITABLE_FIELDS, and both the target check and the role-change
+    check below are enforced here on the server, never by the client."""
+
     current_user = get_current_user()
-    user = User.query.filter(User.id == user_id, User.deleted_at.is_(None)).first()
+    user = _target_user(user_id)
 
     if not user:
         return err("User not found.", 404)
+
+    denied = _guard(current_user, user, Permission.USER_EDIT)
+    if denied:
+        return denied
 
     data = request.get_json(silent=True) or {}
 
     if data.get("role") and data["role"].upper() not in UserRole.__members__:
         return err("Invalid role.", 422, errors={"role": "invalid"})
+
+    if data.get("role"):
+        refusal = assert_role_change_allowed(current_user, user, UserRole[data["role"].upper()])
+        if refusal:
+            return err(refusal, 403)
+
+    if data.get("status") and str(data["status"]).lower() not in ("active", "suspended", "locked"):
+        return err("Invalid status.", 422, errors={"status": "invalid"})
+
+    # Changing your own status through this endpoint would let an admin lock
+    # themselves out; status changes on your own account are simply ignored.
+    if data.get("status") and current_user.id == user.id:
+        return err("You cannot change your own account status.", 403)
 
     if data.get("email"):
         existing = User.query.filter(User.email == data["email"].strip().lower(), User.id != user.id).first()
@@ -125,21 +177,39 @@ def update_user(user_id):
     if data.get("department_id") and not Department.query.get(data["department_id"]):
         return err("Department not found.", 422, errors={"department_id": "invalid"})
 
+    # Recorded before the write so the audit entry can name what actually
+    # changed — a department or role move is exactly the kind of edit someone
+    # will need to trace back later.
+    changes = []
+    if data.get("role") and UserRole[data["role"].upper()] != user.role:
+        changes.append(f"role {user.role.value} -> {data['role'].upper()}")
+    if "department_id" in data and data["department_id"] != user.department_id:
+        previous = user.department.department_name if user.department else "none"
+        new_department = Department.query.get(data["department_id"]) if data["department_id"] else None
+        changes.append(f"department {previous} -> {new_department.department_name if new_department else 'none'}")
+    if data.get("status"):
+        changes.append(f"status -> {str(data['status']).lower()}")
+
     user = UserService.update_user(user, data)
 
-    AuditService.log_action(current_user, AuditAction.UPDATE, f"Updated user {user.email}.")
+    detail = f" ({'; '.join(changes)})" if changes else ""
+    AuditService.log_action(current_user, AuditAction.UPDATE, f"Updated user {user.email}{detail}.")
 
     return ok({"user": serialize_user(user)}, message="User updated successfully.")
 
 
 @users_bp.post("/<int:user_id>/suspend")
-@require_roles(UserRole.SUPER_ADMIN)
+@require_permission(Permission.USER_SUSPEND)
 def suspend_user(user_id):
     current_user = get_current_user()
-    user = User.query.filter(User.id == user_id, User.deleted_at.is_(None)).first()
+    user = _target_user(user_id)
 
     if not user:
         return err("User not found.", 404)
+
+    denied = _guard(current_user, user, Permission.USER_SUSPEND)
+    if denied:
+        return denied
 
     user = UserService.suspend_user(user)
 
@@ -149,13 +219,17 @@ def suspend_user(user_id):
 
 
 @users_bp.post("/<int:user_id>/activate")
-@require_roles(UserRole.SUPER_ADMIN)
+@require_permission(Permission.USER_SUSPEND)
 def activate_user(user_id):
     current_user = get_current_user()
-    user = User.query.filter(User.id == user_id, User.deleted_at.is_(None)).first()
+    user = _target_user(user_id)
 
     if not user:
         return err("User not found.", 404)
+
+    denied = _guard(current_user, user, Permission.USER_SUSPEND)
+    if denied:
+        return denied
 
     user = UserService.activate_user(user)
 
@@ -165,17 +239,21 @@ def activate_user(user_id):
 
 
 @users_bp.delete("/<int:user_id>")
-@require_roles(UserRole.SUPER_ADMIN)
+@require_permission(Permission.USER_DELETE)
 def delete_user(user_id):
     current_user = get_current_user()
 
     if user_id == current_user.id:
         return err("You cannot delete your own account.", 400)
 
-    user = User.query.filter(User.id == user_id, User.deleted_at.is_(None)).first()
+    user = _target_user(user_id)
 
     if not user:
         return err("User not found.", 404)
+
+    denied = _guard(current_user, user, Permission.USER_DELETE)
+    if denied:
+        return denied
 
     UserService.soft_delete_user(user)
 
@@ -185,13 +263,21 @@ def delete_user(user_id):
 
 
 @users_bp.post("/<int:user_id>/reset-password")
-@require_roles(UserRole.SUPER_ADMIN)
+@require_permission(Permission.USER_RESET_PASSWORD)
 def admin_reset_password(user_id):
+    """Triggers the existing self-service reset flow on the user's behalf — an
+    administrator never sets or sees a password, they only cause a one-time
+    link to be emailed. That is why password_hash is not in EDITABLE_FIELDS."""
+
     current_user = get_current_user()
-    user = User.query.filter(User.id == user_id, User.deleted_at.is_(None)).first()
+    user = _target_user(user_id)
 
     if not user:
         return err("User not found.", 404)
+
+    denied = _guard(current_user, user, Permission.USER_RESET_PASSWORD)
+    if denied:
+        return denied
 
     _, raw_token = AuthService.request_password_reset(user.email)
 

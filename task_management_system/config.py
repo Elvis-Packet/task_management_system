@@ -71,3 +71,7 @@ class Config:
     SEED_MANAGER_EMAIL = os.getenv("SEED_MANAGER_EMAIL")
 
     SEED_MANAGER_PASSWORD = os.getenv("SEED_MANAGER_PASSWORD")
+
+    SEED_HR_EMAIL = os.getenv("SEED_HR_EMAIL")
+
+    SEED_HR_PASSWORD = os.getenv("SEED_HR_PASSWORD")

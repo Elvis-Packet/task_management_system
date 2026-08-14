@@ -82,9 +82,6 @@ def week_view():
         if not employee:
             return err("Employee not found.", 404)
 
-        if current_user.role == UserRole.OPERATIONAL_MANAGER and employee.department_id != current_user.department_id:
-            return err("You can only view staff in your own department.", 403)
-
     view = WeeklyPlanService.week_view(employee, target_date)
     plan = view["plan"]
 
@@ -98,11 +95,11 @@ def week_view():
     if current_user.role == UserRole.STAFF:
         plan_editable_by_viewer = plan is None or plan.status in (PlanStatus.DRAFT, PlanStatus.REJECTED)
     else:
-        same_department = plan and plan.employee and (
-            current_user.role == UserRole.SUPER_ADMIN
-            or plan.employee.department_id == current_user.department_id
-        )
-        plan_editable_by_viewer = bool(plan and same_department and plan.status == PlanStatus.SUBMITTED)
+        # Both org-wide reviewer roles (Super Admin and the central
+        # Operational Manager) may edit any department's plan during review;
+        # HR is read-only and never gets an editable view.
+        can_review = current_user.role in (UserRole.SUPER_ADMIN, UserRole.OPERATIONAL_MANAGER)
+        plan_editable_by_viewer = bool(can_review and plan and plan.status == PlanStatus.SUBMITTED)
 
     return ok({
         "plan": serialize_plan(plan) if plan else None,

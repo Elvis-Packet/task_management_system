@@ -32,6 +32,9 @@ services:
         value: https://survitec-x-dahawi.vercel.app
       # Set these in the Render dashboard (Environment tab) instead of
       # here — real account credentials should never be committed.
+      # One account per role that cannot be created from inside the app:
+      # the Super Admin, the central Operational Manager, and HR. Everyone
+      # else is created through User Management.
       - key: SEED_SUPER_ADMIN_EMAIL
         sync: false
       - key: SEED_SUPER_ADMIN_PASSWORD
@@ -39,4 +42,8 @@ services:
       - key: SEED_MANAGER_EMAIL
         sync: false
       - key: SEED_MANAGER_PASSWORD
+        sync: false
+      - key: SEED_HR_EMAIL
+        sync: false
+      - key: SEED_HR_PASSWORD
         sync: false

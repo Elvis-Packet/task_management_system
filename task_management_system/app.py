@@ -28,6 +28,7 @@ from models.login_history import LoginHistory
 from models.comment import Comment
 from models.generated_report import GeneratedReport
 from models.task_exception import TaskException
+from models.task_query import TaskQuery
 from models.enums import UserRole, UserStatus
 
 from routes.auth import auth_bp
@@ -39,6 +40,8 @@ from routes.weekly_plans import plans_bp
 from routes.notifications import notifications_bp
 from routes.reports import reports_bp
 from routes.audit import audit_bp
+from routes.queries import queries_bp
+from routes.hr import hr_bp
 
 
 app = Flask(__name__)
@@ -111,6 +114,8 @@ app.register_blueprint(plans_bp, url_prefix=f"{API_PREFIX}/plans")
 app.register_blueprint(notifications_bp, url_prefix=f"{API_PREFIX}/notifications")
 app.register_blueprint(reports_bp, url_prefix=f"{API_PREFIX}/reports")
 app.register_blueprint(audit_bp, url_prefix=f"{API_PREFIX}/audit")
+app.register_blueprint(queries_bp, url_prefix=f"{API_PREFIX}/queries")
+app.register_blueprint(hr_bp, url_prefix=f"{API_PREFIX}/hr")
 
 
 @app.get(f"{API_PREFIX}/health")
@@ -159,8 +164,12 @@ def handle_unexpected_error(e):
 # =====================================================
 
 def create_seed_accounts():
-    """Idempotently create the two real bootstrap accounts from the spec.
-    Checked by email, never duplicated — no throwaway/demo accounts are seeded."""
+    """Idempotently create the real bootstrap accounts from the spec.
+    Checked by email, never duplicated — no throwaway/demo accounts are seeded.
+
+    One account per role that cannot be created from inside the app: the
+    Super Admin (who creates everyone else), the single central Operational
+    Manager, and HR. Staff are always created through User Management."""
 
     seeds = [
         {
@@ -170,14 +179,25 @@ def create_seed_accounts():
             "email": Config.SEED_SUPER_ADMIN_EMAIL,
             "password": Config.SEED_SUPER_ADMIN_PASSWORD,
             "role": UserRole.SUPER_ADMIN,
+            "job_title": "System Administrator",
         },
         {
             "employee_number": "OM001",
-            "first_name": "Survitec",
-            "last_name": "Equipment Ltd",
+            "first_name": "Mwangangi",
+            "last_name": "M.",
             "email": Config.SEED_MANAGER_EMAIL,
             "password": Config.SEED_MANAGER_PASSWORD,
             "role": UserRole.OPERATIONAL_MANAGER,
+            "job_title": "Operational Manager",
+        },
+        {
+            "employee_number": "HR001",
+            "first_name": "Survitec",
+            "last_name": "Equipment Ltd",
+            "email": Config.SEED_HR_EMAIL,
+            "password": Config.SEED_HR_PASSWORD,
+            "role": UserRole.HR,
+            "job_title": "Human Resources",
         },
     ]
 
@@ -199,6 +219,7 @@ def create_seed_accounts():
             last_name=data["last_name"],
             email=email,
             role=data["role"],
+            job_title=data.get("job_title"),
             status=UserStatus.ACTIVE,
             is_first_login=True,
         )

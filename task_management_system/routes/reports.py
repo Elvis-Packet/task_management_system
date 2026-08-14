@@ -22,7 +22,11 @@ def _report_comments(report_id):
     ).order_by(Comment.created_at.asc()).all()
 
 
-def _visible_report(report_id, current_user):
+def _visible_report(report_id):
+    """Both roles that can reach these routes (Super Admin and the central
+    Operational Manager) now oversee every department, so a report is either
+    found or it isn't — there is no per-department visibility split left."""
+
     from models.generated_report import GeneratedReport
 
     report = GeneratedReport.query.get(report_id)
@@ -30,20 +34,16 @@ def _visible_report(report_id, current_user):
     if not report:
         return None, err("Report not found.", 404)
 
-    if current_user.role == UserRole.OPERATIONAL_MANAGER and report.department_id != current_user.department_id:
-        return None, err("You can only access reports for your own department.", 403)
-
     return report, None
 
 
 @reports_bp.get("")
 @require_roles(*MANAGE_ROLES)
 def list_reports():
-    current_user = get_current_user()
+    # The central Operational Manager oversees every department, so reports
+    # are no longer force-filtered to the caller's own department — a
+    # department_id may still be passed explicitly as a filter.
     args = request.args.to_dict()
-
-    if current_user.role == UserRole.OPERATIONAL_MANAGER:
-        args["department_id"] = current_user.department_id
 
     reports = ReportService.list_reports(args)
     return ok({"items": [serialize_generated_report(r) for r in reports], "total": len(reports)})
@@ -52,8 +52,7 @@ def list_reports():
 @reports_bp.get("/<int:report_id>")
 @require_roles(*MANAGE_ROLES)
 def get_report(report_id):
-    current_user = get_current_user()
-    report, error = _visible_report(report_id, current_user)
+    report, error = _visible_report(report_id)
 
     if error:
         return error
@@ -86,9 +85,6 @@ def generate_department_report(department_id):
 
     current_user = get_current_user()
 
-    if current_user.role == UserRole.OPERATIONAL_MANAGER and department_id != current_user.department_id:
-        return err("You can only generate reports for your own department.", 403)
-
     department = Department.query.get(department_id)
 
     if not department:
@@ -117,7 +113,7 @@ def generate_department_report(department_id):
 @require_roles(*MANAGE_ROLES)
 def add_report_comment(report_id):
     current_user = get_current_user()
-    report, error = _visible_report(report_id, current_user)
+    report, error = _visible_report(report_id)
 
     if error:
         return error
@@ -171,9 +167,6 @@ def weekly_report():
     if not employee:
         return err("Employee not found.", 404)
 
-    if current_user.role == UserRole.OPERATIONAL_MANAGER and employee.department_id != current_user.department_id:
-        return err("You can only view reports for staff in your own department.", 403)
-
     from datetime import date
     today = date.today()
     iso_year, iso_week, _ = today.isocalendar()
@@ -202,20 +195,12 @@ def weekly_history():
     if not employee:
         return err("Employee not found.", 404)
 
-    if current_user.role == UserRole.OPERATIONAL_MANAGER and employee.department_id != current_user.department_id:
-        return err("You can only view reports for staff in your own department.", 403)
-
     return ok({"weeks": ReportService.weekly_history(employee, weeks)})
 
 
 @reports_bp.get("/department/<int:department_id>")
 @require_roles(*MANAGE_ROLES)
 def department_report(department_id):
-    current_user = get_current_user()
-
-    if current_user.role == UserRole.OPERATIONAL_MANAGER and department_id != current_user.department_id:
-        return err("You can only view reports for your own department.", 403)
-
     department = Department.query.get(department_id)
 
     if not department:

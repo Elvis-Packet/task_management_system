@@ -7,7 +7,13 @@ from enum import Enum
 
 class UserRole(Enum):
     SUPER_ADMIN = "SUPER_ADMIN"
+    # The single central Operational Manager — oversees every department and
+    # every user, not one department. Department membership on this account
+    # is informational only; scope comes from utils.rbac.has_org_scope().
     OPERATIONAL_MANAGER = "OPERATIONAL_MANAGER"
+    # Read-mostly people-operations role: sees organization-wide task
+    # performance and escalation flags, never manages users or tasks.
+    HR = "HR"
     STAFF = "STAFF"
 
 
@@ -99,6 +105,7 @@ class FinalStatus(Enum):
 class NotificationType(Enum):
     SYSTEM = "SYSTEM"
     ASSIGNED_TASK = "ASSIGNED_TASK"
+    TASK_QUERY = "TASK_QUERY"
     WEEKLY_PLAN = "WEEKLY_PLAN"
     PLAN_REVIEW = "PLAN_REVIEW"
     PERFORMANCE = "PERFORMANCE"
@@ -142,6 +149,9 @@ class AuditAction(Enum):
     SUBMIT_PLAN = "SUBMIT_PLAN"
     REVIEW_PLAN = "REVIEW_PLAN"
     COMMENT = "COMMENT"
+    RAISE_QUERY = "RAISE_QUERY"
+    RESPOND_QUERY = "RESPOND_QUERY"
+    CLOSE_QUERY = "CLOSE_QUERY"
 
 
 # ==========================================================
@@ -178,3 +188,16 @@ class TaskResolution(Enum):
     ESCALATED = "ESCALATED"
     WAIVED = "WAIVED"
     CONTINUE_MONITORING = "CONTINUE_MONITORING"
+
+
+# ==========================================================
+# MANAGER STATUS QUERY ON AN INCOMPLETE TASK
+# A manager asks the assignee for a progress update; the staff
+# member answers on the same record, so "asked but never answered"
+# is a first-class, countable state (HR flags depend on it).
+# ==========================================================
+
+class QueryStatus(Enum):
+    OPEN = "OPEN"
+    ANSWERED = "ANSWERED"
+    CLOSED = "CLOSED"

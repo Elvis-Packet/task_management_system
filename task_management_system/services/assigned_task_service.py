@@ -6,7 +6,19 @@ from models.assigned_task import AssignedTask
 from models.task_progress_update import TaskProgressUpdate
 from models.enums import UserRole, TaskStatus, NotificationType, NotificationPriority
 from utils.enum_map import priority_from_fe, task_status_from_fe
+from utils.rbac import has_org_scope
 from services.performance_service import PerformanceService
+
+# Statuses that mean "this task is finished or abandoned" — the complement is
+# "still outstanding". Defined once here because the overdue check, the
+# manager's query gate and the HR flags must all agree on what counts as
+# incomplete.
+CLOSED_STATUSES = (
+    TaskStatus.COMPLETED,
+    TaskStatus.VERIFIED,
+    TaskStatus.REJECTED,
+    TaskStatus.CANCELLED,
+)
 
 
 def _find_department_manager(department_id):
@@ -18,19 +30,47 @@ def _find_department_manager(department_id):
     ).first()
 
 
+def resolve_manager_for(employee):
+    """The manager who owns an employee's work: their own department's
+    Operational Manager if one is assigned, otherwise the central Operational
+    Manager (who oversees every department and is the fallback owner for any
+    department that has no dedicated manager of its own).
+
+    This exists because the organization now runs one central manager who may
+    not be attached to any department — without the fallback, staff in an
+    unmanaged department could not submit a task at all."""
+
+    manager = _find_department_manager(employee.department_id)
+
+    if manager:
+        return manager
+
+    return (
+        User.query.filter_by(role=UserRole.OPERATIONAL_MANAGER, deleted_at=None)
+        .order_by(User.id.asc())
+        .first()
+    )
+
+
+def _parse_date(value):
+    if not value:
+        return None
+
+    return datetime.fromisoformat(str(value)).date()
+
+
 class AssignedTaskService:
 
     @staticmethod
     def scoped_query(current_user):
+        """STAFF see only their own tasks. Every org-scoped role — SUPER_ADMIN,
+        the central OPERATIONAL_MANAGER and HR — sees tasks across every
+        department; write access is gated separately by permission."""
+
         query = AssignedTask.query
 
-        if current_user.role == UserRole.STAFF:
+        if not has_org_scope(current_user):
             return query.filter(AssignedTask.employee_id == current_user.id)
-
-        if current_user.role == UserRole.OPERATIONAL_MANAGER:
-            return query.join(User, AssignedTask.employee_id == User.id).filter(
-                User.department_id == current_user.department_id
-            )
 
         return query
 
@@ -39,6 +79,13 @@ class AssignedTaskService:
         employee_id = args.get("employee_id") or args.get("assignee_id")
         status = args.get("status")
         priority = args.get("priority")
+        department_id = args.get("department_id")
+        assigned_date = args.get("assigned_date") or args.get("date")
+        date_from = args.get("date_from")
+        date_to = args.get("date_to")
+        search = args.get("search")
+        overdue = args.get("overdue")
+        incomplete = args.get("incomplete")
 
         if employee_id:
             query = query.filter(AssignedTask.employee_id == employee_id)
@@ -49,26 +96,86 @@ class AssignedTaskService:
         if priority:
             query = query.filter(AssignedTask.priority == priority_from_fe(priority))
 
-        return query.order_by(AssignedTask.due_date.asc(), AssignedTask.created_at.desc())
+        if department_id:
+            query = query.join(User, AssignedTask.employee_id == User.id).filter(
+                User.department_id == department_id
+            )
+
+        # A single working day — the "John, 14 August" view, where several
+        # independent tasks share one date.
+        for raw, column_filter in (
+            (assigned_date, lambda d: AssignedTask.assigned_date == d),
+            (date_from, lambda d: AssignedTask.assigned_date >= d),
+            (date_to, lambda d: AssignedTask.assigned_date <= d),
+        ):
+            if raw:
+                try:
+                    query = query.filter(column_filter(_parse_date(raw)))
+                except (TypeError, ValueError):
+                    pass
+
+        if search:
+            like = f"%{search}%"
+            query = query.filter(
+                db.or_(AssignedTask.title.ilike(like), AssignedTask.description.ilike(like))
+            )
+
+        # Overdue is a derived property (status + due_date vs today), so it
+        # has to be expressed as SQL here rather than reusing task.is_overdue.
+        if str(overdue).lower() in ("1", "true", "yes"):
+            query = query.filter(
+                AssignedTask.status.notin_(CLOSED_STATUSES),
+                AssignedTask.due_date < date.today(),
+            )
+
+        if str(incomplete).lower() in ("1", "true", "yes"):
+            query = query.filter(AssignedTask.status.notin_(CLOSED_STATUSES))
+
+        return query.order_by(
+            AssignedTask.assigned_date.desc(),
+            AssignedTask.due_date.asc(),
+            AssignedTask.created_at.desc(),
+        )
+
+    @staticmethod
+    def _build_task(data, manager):
+        """One AssignedTask row from one payload. Every call creates a fresh,
+        fully independent record — an employee can hold any number of these
+        for the same assigned_date, each with its own title, description,
+        priority, due date, status and progress. There is no per-employee,
+        per-day rollup anywhere in this model."""
+
+        due_date = datetime.fromisoformat(data["due_date"]).date()
+
+        # The working day the task belongs to. Defaults to today (the previous
+        # behaviour) but a manager can now assign several tasks onto a
+        # specific future date in one sitting.
+        assigned_date = _parse_date(data.get("assigned_date")) or date.today()
+
+        due_time = None
+        if data.get("due_time"):
+            due_time = datetime.strptime(data["due_time"], "%H:%M").time()
+
+        return AssignedTask(
+            employee_id=data["employee_id"],
+            manager_id=manager.id,
+            title=data["title"].strip(),
+            description=data.get("description"),
+            expected_outcome=data.get("expected_outcome"),
+            assigned_date=assigned_date,
+            assigned_time=datetime.utcnow().time(),
+            due_date=due_date,
+            due_time=due_time,
+            priority=priority_from_fe(data.get("priority")),
+            status=TaskStatus.PENDING,
+        )
 
     @staticmethod
     def create_task(data, manager):
         """Manager/Super Admin assigns a task directly — the assigner's own
         authority is the approval, so it starts ready to work (PENDING)."""
 
-        due_date = datetime.fromisoformat(data["due_date"]).date()
-
-        task = AssignedTask(
-            employee_id=data["employee_id"],
-            manager_id=manager.id,
-            title=data["title"].strip(),
-            description=data.get("description"),
-            assigned_date=date.today(),
-            assigned_time=datetime.utcnow().time(),
-            due_date=due_date,
-            priority=priority_from_fe(data.get("priority")),
-            status=TaskStatus.PENDING,
-        )
+        task = AssignedTaskService._build_task(data, manager)
 
         db.session.add(task)
         db.session.commit()
@@ -76,6 +183,23 @@ class AssignedTaskService:
         PerformanceService.recalculate(task.employee)
 
         return task
+
+    @staticmethod
+    def create_tasks(entries, manager):
+        """Assign several independent tasks in one request — the normal case
+        when a manager plans out somebody's day. Committed as a single
+        transaction so a bad entry can't leave a half-assigned day behind;
+        each entry still becomes its own separate task record."""
+
+        tasks = [AssignedTaskService._build_task(entry, manager) for entry in entries]
+
+        db.session.add_all(tasks)
+        db.session.commit()
+
+        for employee in {t.employee for t in tasks if t.employee}:
+            PerformanceService.recalculate(employee)
+
+        return tasks
 
     @staticmethod
     def create_self_task(data, staff):
@@ -91,11 +215,11 @@ class AssignedTaskService:
         once when a manager approves the whole plan — never by a staff
         member calling this directly for a planned day."""
 
-        manager = _find_department_manager(staff.department_id)
+        manager = resolve_manager_for(staff)
 
         if not manager:
             raise ValueError(
-                "No Operational Manager is assigned to your department yet. "
+                "No Operational Manager has been set up yet. "
                 "Contact your Super Admin before submitting tasks."
             )
 
@@ -108,7 +232,7 @@ class AssignedTaskService:
             title=data["title"].strip(),
             description=data.get("description"),
             expected_outcome=data.get("expected_outcome"),
-            assigned_date=date.today(),
+            assigned_date=_parse_date(data.get("assigned_date")) or date.today(),
             assigned_time=now.time(),
             due_date=due_date,
             priority=priority_from_fe(data.get("priority")),

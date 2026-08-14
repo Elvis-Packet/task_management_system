@@ -9,6 +9,15 @@ from utils.enum_map import (
     user_status_to_fe,
 )
 
+# A manager can only query a task that is still outstanding — mirrors
+# TaskQueryService.can_raise_on(), which is what the API actually enforces.
+_QUERYABLE_EXCLUDED = (
+    TaskStatus.COMPLETED,
+    TaskStatus.VERIFIED,
+    TaskStatus.REJECTED,
+    TaskStatus.CANCELLED,
+)
+
 _SEVERITY_BY_ACTION = {
     "DELETE": "high",
     "RESET_PASSWORD": "high",
@@ -62,10 +71,16 @@ def serialize_user(user, include_performance=True):
         "id": user.id,
         "employee_number": user.employee_number,
         "first_name": user.first_name,
+        "middle_name": user.middle_name,
         "last_name": user.last_name,
         "name": user.full_name,
         "email": user.email,
         "phone": user.phone,
+        "job_title": user.job_title,
+        # The UI (ProfileCard, employee tables) has always read `title` for
+        # the person's position — it was simply never sent. Same value, both
+        # keys, so nothing has to change on the frontend to start working.
+        "title": user.job_title,
         "role": user.role.value,
         "department_id": user.department_id,
         "department": user.department.department_name if user.department else None,
@@ -148,6 +163,37 @@ def serialize_task_exception(exception):
     }
 
 
+def serialize_task_query(query):
+    if query is None:
+        return None
+
+    return {
+        "id": query.id,
+        "task_id": query.task_id,
+        "task_title": query.task.title if query.task else None,
+        "manager_id": query.manager_id,
+        "manager_name": query.manager.full_name if query.manager else None,
+        "employee_id": query.employee_id,
+        "employee_name": query.employee.full_name if query.employee else None,
+        "department": (
+            query.employee.department.department_name
+            if query.employee and query.employee.department else None
+        ),
+        "message": query.message,
+        "status": query.status.value.lower(),
+        "task_status_at_query": query.task_status_at_query,
+        "current_task_status": task_status_to_fe(query.task.status) if query.task else None,
+        "response": query.response,
+        "responded_at": _iso(query.responded_at),
+        "closed_by": query.closed_by,
+        "closed_by_name": query.closer.full_name if query.closer else None,
+        "closed_at": _iso(query.closed_at),
+        "created_at": _iso(query.created_at),
+        "raised_at": _iso(query.created_at),
+        "awaiting_response": query.is_open,
+    }
+
+
 def _overdue_duration(task):
     if not task.is_overdue:
         return None
@@ -210,6 +256,12 @@ def serialize_task(task, include_comments=None, include_history=False):
         "plan_id": task.plan_id,
         "latest_exception": serialize_task_exception(latest_exception),
         "has_reason": latest_exception is not None,
+        # Manager status requests. open_query_count is on every task row (not
+        # just the detail view) so a list can badge "awaiting your response"
+        # without a second request per task.
+        "open_query_count": sum(1 for q in task.queries if q.is_open),
+        "query_count": len(task.queries),
+        "can_be_queried": task.status not in _QUERYABLE_EXCLUDED,
     }
 
     if include_comments is not None:
@@ -221,6 +273,7 @@ def serialize_task(task, include_comments=None, include_history=False):
         ]
         data["timeline"] = build_task_timeline(task)
         data["exceptions"] = [serialize_task_exception(e) for e in task.exceptions]
+        data["queries"] = [serialize_task_query(q) for q in task.queries]
 
     return data
 
@@ -292,6 +345,30 @@ def build_task_timeline(task):
             "actor_name": task.verifier.full_name if task.verifier else None,
             "timestamp": _iso(task.verified_at),
         })
+
+    for query in task.queries:
+        events.append({
+            "type": "query_raised",
+            "description": f"Status update requested: \"{query.message}\"",
+            "actor_name": query.manager.full_name if query.manager else None,
+            "timestamp": _iso(query.created_at),
+        })
+
+        if query.responded_at:
+            events.append({
+                "type": "query_answered",
+                "description": f"Update provided: \"{query.response}\"",
+                "actor_name": query.employee.full_name if query.employee else None,
+                "timestamp": _iso(query.responded_at),
+            })
+
+        if query.closed_at:
+            events.append({
+                "type": "query_closed",
+                "description": "Status request closed.",
+                "actor_name": query.closer.full_name if query.closer else None,
+                "timestamp": _iso(query.closed_at),
+            })
 
     for exception in task.exceptions:
         resolution_label = (" " + exception.resolution.value.replace("_", " ").title()) if exception.resolution else ""
