@@ -7,6 +7,7 @@ from utils.enum_map import (
     task_status_to_fe,
     plan_status_to_fe,
     user_status_to_fe,
+    leave_status_to_fe,
 )
 
 # A manager can only query a task that is still outstanding — mirrors
@@ -30,6 +31,13 @@ _SEVERITY_BY_ACTION = {
     "REJECT": "medium",
     "ASSIGN_TASK": "medium",
     "REVIEW_PLAN": "medium",
+    # Leave decisions are employment records: approving or refusing somebody's
+    # time off ranks with the other high-severity, people-affecting actions.
+    "LEAVE_REQUEST_APPROVED": "high",
+    "LEAVE_REQUEST_REJECTED": "high",
+    "LEAVE_REQUEST_CANCELLED": "medium",
+    "LEAVE_REQUEST_CREATED": "medium",
+    "LEAVE_TYPE_MANAGED": "medium",
 }
 
 
@@ -740,6 +748,221 @@ def serialize_generated_report(report, include_data=False, include_comments=Fals
         data["comments"] = [serialize_comment(c) for c in comments]
 
     return data
+
+
+# ==========================================================
+# LEAVE
+# ==========================================================
+
+def serialize_leave_type(leave_type):
+    if leave_type is None:
+        return None
+
+    return {
+        "id": leave_type.id,
+        "name": leave_type.name,
+        "code": leave_type.code,
+        "description": leave_type.description,
+        "requires_attachment": leave_type.requires_attachment,
+        "allows_backdating": leave_type.allows_backdating,
+        "min_notice_days": leave_type.min_notice_days,
+        "entitlement_days": leave_type.entitlement_days,
+        "is_paid": leave_type.is_paid,
+        "is_active": leave_type.is_active,
+        "sort_order": leave_type.sort_order,
+        "created_at": _iso(leave_type.created_at),
+        "updated_at": _iso(leave_type.updated_at),
+    }
+
+
+def serialize_leave_attachment(attachment):
+    """Metadata only — never the bytes. The document itself is served by the
+    dedicated download route, which re-checks authorization on every hit."""
+
+    if attachment is None:
+        return None
+
+    return {
+        "id": attachment.id,
+        "leave_request_id": attachment.leave_request_id,
+        "file_name": attachment.file_name,
+        "content_type": attachment.content_type,
+        "file_size": attachment.file_size,
+        "uploaded_by": attachment.uploaded_by,
+        "uploaded_by_name": attachment.uploader.full_name if attachment.uploader else None,
+        "created_at": _iso(attachment.created_at),
+        "download_url": f"/leave/{attachment.leave_request_id}/attachments/{attachment.id}",
+    }
+
+
+def build_leave_timeline(leave_request):
+    """Same pattern as build_task_timeline: the request's own lifecycle
+    timestamps merged with the AuditLog rows tagged to it, so the review
+    history reads as one chronological record without a parallel log."""
+
+    from models.audit_log import AuditLog
+    from models.enums import CommentTargetType, LeaveStatus
+
+    events = []
+
+    if leave_request.submitted_at:
+        events.append({
+            "type": "submitted",
+            "description": (
+                f"Applied for {leave_request.leave_type.name} "
+                f"({leave_request.start_date.isoformat()} to {leave_request.end_date.isoformat()})."
+            ),
+            "actor_name": leave_request.employee.full_name if leave_request.employee else None,
+            "timestamp": _iso(leave_request.submitted_at),
+        })
+
+    for attachment in leave_request.attachments:
+        events.append({
+            "type": "document_attached",
+            "description": f"Attached supporting document \"{attachment.file_name}\".",
+            "actor_name": attachment.uploader.full_name if attachment.uploader else None,
+            "timestamp": _iso(attachment.created_at),
+        })
+
+    if leave_request.reviewed_at:
+        approved = leave_request.status == LeaveStatus.APPROVED
+        events.append({
+            "type": "approved" if approved else "rejected",
+            "description": (
+                ("Approved." if approved else "Rejected.")
+                + (f" {leave_request.review_comment}" if leave_request.review_comment else "")
+            ),
+            "actor_name": leave_request.reviewer.full_name if leave_request.reviewer else None,
+            "timestamp": _iso(leave_request.reviewed_at),
+        })
+
+    if leave_request.cancelled_at:
+        events.append({
+            "type": "cancelled",
+            "description": (
+                "Cancelled."
+                + (f" {leave_request.cancellation_reason}" if leave_request.cancellation_reason else "")
+            ),
+            "actor_name": leave_request.canceller.full_name if leave_request.canceller else None,
+            "timestamp": _iso(leave_request.cancelled_at),
+        })
+
+    audit_events = AuditLog.query.filter_by(
+        target_type=CommentTargetType.LEAVE_REQUEST, target_id=leave_request.id
+    ).order_by(AuditLog.created_at.asc()).all()
+
+    for log in audit_events:
+        events.append({
+            "type": log.action.lower(),
+            "description": log.description,
+            "actor_name": log.user.full_name if log.user else "System",
+            "timestamp": _iso(log.created_at),
+        })
+
+    events.sort(key=lambda e: e["timestamp"] or "")
+
+    return events
+
+
+def serialize_leave_request(leave_request, include_timeline=False, include_balance=False):
+    """One leave application, shaped to mirror the company's paper form:
+    employee information, leave details, reason, contact during leave, and
+    the authorization block.
+
+    Employee/department/designation are read through the User relationship
+    rather than stored on the request, so an employee who transfers
+    department does not rewrite their own leave history."""
+
+    if leave_request is None:
+        return None
+
+    employee = leave_request.employee
+
+    data = {
+        "id": leave_request.id,
+
+        # Section 1 — employee information
+        "employee_id": leave_request.employee_id,
+        "employee_name": employee.full_name if employee else None,
+        "employee_number": employee.employee_number if employee else None,
+        "employee_email": employee.email if employee else None,
+        "employee_phone": employee.phone if employee else None,
+        "designation": employee.job_title if employee else None,
+        "department": employee.department.department_name if employee and employee.department else None,
+        "department_id": employee.department_id if employee else None,
+
+        # Section 2 — leave details
+        "leave_type_id": leave_request.leave_type_id,
+        "leave_type": leave_request.leave_type.name if leave_request.leave_type else None,
+        "leave_type_code": leave_request.leave_type.code if leave_request.leave_type else None,
+        "is_paid": leave_request.leave_type.is_paid if leave_request.leave_type else True,
+        "start_date": _iso(leave_request.start_date),
+        "end_date": _iso(leave_request.end_date),
+        "days": float(leave_request.days) if leave_request.days is not None else 0,
+        "is_half_day": leave_request.is_half_day,
+
+        # Section 3 — reason
+        "reason": leave_request.reason,
+
+        # Section 4 — contact during leave
+        "contact_phone": leave_request.contact_phone,
+        "contact_address": leave_request.contact_address,
+        "handover_to_id": leave_request.handover_to_id,
+        "handover_to_name": leave_request.handover_to.full_name if leave_request.handover_to else None,
+        "handover_contact": leave_request.handover_contact,
+
+        # Section 5 — authorization
+        "status": leave_status_to_fe(leave_request.status),
+        "submitted_at": _iso(leave_request.submitted_at),
+        "applied_at": _iso(leave_request.submitted_at),
+        "reviewed_by": leave_request.reviewed_by,
+        "reviewer_name": leave_request.reviewer.full_name if leave_request.reviewer else None,
+        "reviewer_role": leave_request.reviewer_role,
+        "reviewed_at": _iso(leave_request.reviewed_at),
+        "review_comment": leave_request.review_comment,
+
+        "cancelled_at": _iso(leave_request.cancelled_at),
+        "cancelled_by": leave_request.cancelled_by,
+        "cancelled_by_name": leave_request.canceller.full_name if leave_request.canceller else None,
+        "cancellation_reason": leave_request.cancellation_reason,
+
+        "attachments": [serialize_leave_attachment(a) for a in leave_request.attachments],
+        "attachment_count": len(leave_request.attachments),
+
+        "on_leave_now": leave_request.is_active_today,
+        "is_upcoming": leave_request.is_upcoming,
+
+        "created_at": _iso(leave_request.created_at),
+        "updated_at": _iso(leave_request.updated_at),
+    }
+
+    if include_balance and employee and leave_request.leave_type:
+        from services.leave_service import LeaveService
+
+        data["balance"] = LeaveService.balance_for(employee, leave_request.leave_type)
+
+    if include_timeline:
+        data["timeline"] = build_leave_timeline(leave_request)
+
+    return data
+
+
+def serialize_leave_conflict(leave_request):
+    """The compact shape the task-assignment warning needs — just enough to
+    say who is away, for what, and when."""
+
+    if leave_request is None:
+        return None
+
+    return {
+        "leave_request_id": leave_request.id,
+        "employee_id": leave_request.employee_id,
+        "employee_name": leave_request.employee.full_name if leave_request.employee else None,
+        "leave_type": leave_request.leave_type.name if leave_request.leave_type else None,
+        "start_date": _iso(leave_request.start_date),
+        "end_date": _iso(leave_request.end_date),
+        "days": float(leave_request.days) if leave_request.days is not None else 0,
+    }
 
 
 def serialize_performance(performance):

@@ -113,6 +113,7 @@ class NotificationType(Enum):
     SECURITY = "SECURITY"
     ANNOUNCEMENT = "ANNOUNCEMENT"
     COMMENT = "COMMENT"
+    LEAVE_REQUEST = "LEAVE_REQUEST"
 
 
 class NotificationPriority(Enum):
@@ -152,6 +153,15 @@ class AuditAction(Enum):
     RAISE_QUERY = "RAISE_QUERY"
     RESPOND_QUERY = "RESPOND_QUERY"
     CLOSE_QUERY = "CLOSE_QUERY"
+    # Leave. Spelled out in full rather than reusing CREATE/VERIFY/REJECT
+    # because a leave decision is an employment record — "who approved whose
+    # leave, when, and why" has to be greppable in the audit log on its own,
+    # not inferred from a generic UPDATE against a target_id.
+    LEAVE_REQUEST_CREATED = "LEAVE_REQUEST_CREATED"
+    LEAVE_REQUEST_APPROVED = "LEAVE_REQUEST_APPROVED"
+    LEAVE_REQUEST_REJECTED = "LEAVE_REQUEST_REJECTED"
+    LEAVE_REQUEST_CANCELLED = "LEAVE_REQUEST_CANCELLED"
+    LEAVE_TYPE_MANAGED = "LEAVE_TYPE_MANAGED"
 
 
 # ==========================================================
@@ -163,6 +173,7 @@ class CommentTargetType(Enum):
     WEEKLY_PLAN = "WEEKLY_PLAN"
     REPORT = "REPORT"
     ACTIVITY = "ACTIVITY"
+    LEAVE_REQUEST = "LEAVE_REQUEST"
 
 
 # ==========================================================
@@ -201,3 +212,19 @@ class QueryStatus(Enum):
     OPEN = "OPEN"
     ANSWERED = "ANSWERED"
     CLOSED = "CLOSED"
+
+
+# ==========================================================
+# LEAVE
+#
+# A leave request is never edited into an approved state — it moves
+# PENDING -> APPROVED | REJECTED | CANCELLED exactly once, and the transition
+# is always attributed (reviewed_by / reviewed_at / review_comment). There is
+# deliberately no DRAFT: an unsubmitted application is not a record.
+# ==========================================================
+
+class LeaveStatus(Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    CANCELLED = "CANCELLED"

@@ -39,6 +39,51 @@ tasks_bp = Blueprint("tasks", __name__)
 MANAGE_ROLES = (UserRole.SUPER_ADMIN, UserRole.OPERATIONAL_MANAGER)
 
 
+def _leave_warnings(tasks):
+    """Approved leave that overlaps the working window of tasks just
+    assigned, as human-readable warnings on the response.
+
+    Deliberately advisory and computed AFTER the write: a manager may have a
+    perfectly good reason to schedule across somebody's leave, so the system's
+    job is to make sure they know they are doing it — not to refuse. The
+    assignment screen checks the same data before submitting; this is the
+    backstop for any client that did not.
+
+    One warning per employee per distinct leave, not per task, so laying out
+    somebody's whole week produces one message rather than five."""
+
+    from services.leave_service import LeaveService
+
+    warnings = []
+    seen = set()
+
+    for task in tasks:
+        clash = LeaveService.leave_conflict_for_task(
+            task.employee_id, task.assigned_date, task.due_date
+        )
+
+        if not clash or (task.employee_id, clash.id) in seen:
+            continue
+
+        seen.add((task.employee_id, clash.id))
+
+        warnings.append({
+            "employee_id": task.employee_id,
+            "employee_name": task.employee.full_name if task.employee else None,
+            "leave_request_id": clash.id,
+            "leave_type": clash.leave_type.name if clash.leave_type else None,
+            "start_date": clash.start_date.isoformat(),
+            "end_date": clash.end_date.isoformat(),
+            "message": (
+                f"{task.employee.full_name if task.employee else 'This employee'} is on "
+                f"approved {clash.leave_type.name if clash.leave_type else 'leave'} from "
+                f"{clash.start_date.isoformat()} to {clash.end_date.isoformat()}."
+            ),
+        })
+
+    return warnings
+
+
 def _visible_task(task_id, current_user):
     return AssignedTaskService.scoped_query(current_user).filter(AssignedTask.id == task_id).first()
 
@@ -166,7 +211,17 @@ def create_task():
         current_user, AuditAction.ASSIGN_TASK, f"Assigned task '{task.title}' to {employee.full_name}."
     )
 
-    return ok({"task": serialize_task(task)}, message="Task assigned successfully.", status=201)
+    leave_warnings = _leave_warnings([task])
+
+    return ok(
+        {"task": serialize_task(task), "leave_warnings": leave_warnings},
+        message=(
+            leave_warnings[0]["message"] + " The task was still assigned."
+            if leave_warnings
+            else "Task assigned successfully."
+        ),
+        status=201,
+    )
 
 
 @tasks_bp.post("/bulk")
@@ -268,7 +323,11 @@ def create_tasks_bulk():
         )
 
     return ok(
-        {"tasks": [serialize_task(t) for t in tasks], "count": len(tasks)},
+        {
+            "tasks": [serialize_task(t) for t in tasks],
+            "count": len(tasks),
+            "leave_warnings": _leave_warnings(tasks),
+        },
         message=f"{len(tasks)} task{'s' if len(tasks) != 1 else ''} assigned successfully.",
         status=201,
     )

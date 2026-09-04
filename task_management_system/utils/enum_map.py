@@ -6,7 +6,7 @@ in one place means the frontend's existing status badges / filters / labels
 never had to be rewritten to match the backend.
 """
 
-from models.enums import TaskPriority, TaskStatus, PlanStatus, UserStatus
+from models.enums import TaskPriority, TaskStatus, PlanStatus, UserStatus, LeaveStatus
 
 # --- Priority --------------------------------------------------------------
 # Frontend has low/medium/high/critical. Backend has LOW/NORMAL/HIGH/CRITICAL.
@@ -55,6 +55,23 @@ def plan_status_from_fe(value, default=PlanStatus.DRAFT):
         return default
     try:
         return PlanStatus[str(value).upper()]
+    except KeyError:
+        return default
+
+
+# --- Leave status ----------------------------------------------------------
+# 1:1 name match once lowercased — pending/approved/rejected/cancelled are
+# already in the frontend's statusTone() map, so leave badges pick up the
+# right colours with no new styling.
+def leave_status_to_fe(status):
+    return status.value.lower() if status else None
+
+
+def leave_status_from_fe(value, default=None):
+    if not value:
+        return default
+    try:
+        return LeaveStatus[str(value).upper()]
     except KeyError:
         return default
 

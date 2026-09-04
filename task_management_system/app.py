@@ -29,6 +29,8 @@ from models.comment import Comment
 from models.generated_report import GeneratedReport
 from models.task_exception import TaskException
 from models.task_query import TaskQuery
+from models.leave_type import LeaveType
+from models.leave_request import LeaveRequest, LeaveAttachment
 from models.enums import UserRole, UserStatus
 
 from routes.auth import auth_bp
@@ -42,6 +44,7 @@ from routes.reports import reports_bp
 from routes.audit import audit_bp
 from routes.queries import queries_bp
 from routes.hr import hr_bp
+from routes.leave import leave_bp
 
 
 app = Flask(__name__)
@@ -116,6 +119,7 @@ app.register_blueprint(reports_bp, url_prefix=f"{API_PREFIX}/reports")
 app.register_blueprint(audit_bp, url_prefix=f"{API_PREFIX}/audit")
 app.register_blueprint(queries_bp, url_prefix=f"{API_PREFIX}/queries")
 app.register_blueprint(hr_bp, url_prefix=f"{API_PREFIX}/hr")
+app.register_blueprint(leave_bp, url_prefix=f"{API_PREFIX}/leave")
 
 
 @app.get(f"{API_PREFIX}/health")
@@ -236,9 +240,24 @@ def create_seed_accounts():
         db.session.commit()
 
 
+def create_seed_leave_types():
+    """The starting leave catalogue, taken from the company's own leave
+    application form. Idempotent and matched on code, exactly like the
+    account seeds above — HR owns the list from here on, and nothing in the
+    code refers to any of these types by name."""
+
+    from services.leave_service import LeaveTypeService
+
+    created = LeaveTypeService.seed_defaults()
+
+    if created:
+        print(f"Seeded {created} leave type(s)")
+
+
 with app.app_context():
     try:
         create_seed_accounts()
+        create_seed_leave_types()
     except Exception as exc:  # pragma: no cover
         # Tables don't exist yet (e.g. this import is happening as part of
         # `flask db migrate`/`upgrade` before the schema exists). Migrations

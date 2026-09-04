@@ -103,6 +103,22 @@ class DashboardService:
 
         data["open_queries"] = open_queries.count()
 
+        # Leave, scoped exactly like everything else on this dashboard: a
+        # staff member sees their own pending applications and whether they
+        # are away today; a reviewer sees the organization's queue. Read
+        # through LeaveService.scoped_query so the dashboard can never count
+        # a record the viewer could not open.
+        from services.leave_service import LeaveService
+
+        leave_summary = LeaveService.summary(LeaveService.scoped_query(self.user))
+
+        data.update({
+            "leave_pending": leave_summary["pending"],
+            "leave_approved": leave_summary["approved"],
+            "on_leave_now": leave_summary["on_leave_now"],
+            "leave_upcoming": leave_summary["upcoming"],
+        })
+
         if has_org_scope(self.user):
             month_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 

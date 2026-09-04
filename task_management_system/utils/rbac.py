@@ -59,6 +59,21 @@ class Permission:
     AUDIT_VIEW = "audit:view"
     HR_DASHBOARD = "hr:dashboard"
 
+    # Leave management
+    #
+    # LEAVE_APPLY is held by every role because every role is also an
+    # employee — the Manager and HR take leave like anyone else, and their
+    # applications go through exactly the same review.
+    #
+    # LEAVE_VIEW_ALL and LEAVE_REVIEW are separate capabilities on purpose:
+    # seeing the organization's leave and deciding it are different powers,
+    # and keeping them apart leaves room for a read-only auditor later
+    # without touching a single route.
+    LEAVE_APPLY = "leave:apply"
+    LEAVE_VIEW_ALL = "leave:view_all"
+    LEAVE_REVIEW = "leave:review"
+    LEAVE_TYPE_MANAGE = "leave:type_manage"
+
 
 _ADMIN_PERMISSIONS = frozenset({
     Permission.USER_VIEW,
@@ -75,6 +90,10 @@ _ADMIN_PERMISSIONS = frozenset({
     Permission.REPORT_GENERATE,
     Permission.AUDIT_VIEW,
     Permission.HR_DASHBOARD,
+    Permission.LEAVE_APPLY,
+    Permission.LEAVE_VIEW_ALL,
+    Permission.LEAVE_REVIEW,
+    Permission.LEAVE_TYPE_MANAGE,
 })
 
 # The central Operational Manager has the same user-management capabilities
@@ -94,23 +113,43 @@ _MANAGER_PERMISSIONS = frozenset({
     Permission.REPORT_VIEW,
     Permission.REPORT_GENERATE,
     Permission.HR_DASHBOARD,
+    Permission.LEAVE_APPLY,
+    Permission.LEAVE_VIEW_ALL,
+    Permission.LEAVE_REVIEW,
 })
 
-# HR is visibility-only: it can read people/performance data organization-wide
-# but cannot create, edit, suspend or delete anyone, cannot assign or verify
-# work, and cannot raise queries. Escalation would have to happen here, in
-# writing, not by accident.
+# HR is visibility-only on TASK data: it can read people/performance data
+# organization-wide but cannot create, edit, suspend or delete anyone, cannot
+# assign or verify work, and cannot raise queries. Escalation would have to
+# happen here, in writing, not by accident.
+#
+# Leave is the deliberate exception, and the only one. Approving leave is an
+# HR function in this business — the paper form has an "HR Approval"
+# signature block of its own — so HR holds LEAVE_REVIEW and owns the leave
+# type catalogue. That grant is scoped strictly to the leave module; it
+# confers nothing over users, tasks, plans or reports.
 _HR_PERMISSIONS = frozenset({
     Permission.USER_VIEW,
     Permission.REPORT_VIEW,
     Permission.HR_DASHBOARD,
+    Permission.LEAVE_APPLY,
+    Permission.LEAVE_VIEW_ALL,
+    Permission.LEAVE_REVIEW,
+    Permission.LEAVE_TYPE_MANAGE,
+})
+
+# Staff hold exactly one capability: applying for their own leave. Everything
+# else a staff member can do is ownership-based (their own tasks, their own
+# plans) and is checked against the record, not against this table.
+_STAFF_PERMISSIONS = frozenset({
+    Permission.LEAVE_APPLY,
 })
 
 ROLE_PERMISSIONS = {
     UserRole.SUPER_ADMIN: _ADMIN_PERMISSIONS,
     UserRole.OPERATIONAL_MANAGER: _MANAGER_PERMISSIONS,
     UserRole.HR: _HR_PERMISSIONS,
-    UserRole.STAFF: frozenset(),
+    UserRole.STAFF: _STAFF_PERMISSIONS,
 }
 
 
