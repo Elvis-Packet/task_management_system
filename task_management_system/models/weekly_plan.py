@@ -76,6 +76,10 @@ class WeeklyPlan(db.Model):
         default=0
     )
 
+    review_notes = db.Column(
+        db.Text
+    )
+
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow

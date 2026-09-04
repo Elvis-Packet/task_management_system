@@ -46,6 +46,32 @@ class Activity(db.Model):
         db.Text
     )
 
+    # Optional planned time/deadline for this specific day, and what the
+    # employee expects the finished work to achieve — the same two fields
+    # AssignedTask carries, kept here too since a planned item is filled in
+    # before any AssignedTask exists.
+    due_time = db.Column(
+        db.Time
+    )
+
+    expected_outcome = db.Column(
+        db.Text
+    )
+
+    # "Goal" weighting used by the weekly-plan UI — what fraction of the
+    # week's plan this item represents, and how many discrete tasks it covers.
+    weight = db.Column(
+        db.Integer,
+        default=0,
+        nullable=False
+    )
+
+    task_count = db.Column(
+        db.Integer,
+        default=1,
+        nullable=False
+    )
+
     priority = db.Column(
         db.Enum(TaskPriority),
         default=TaskPriority.NORMAL,
@@ -101,6 +127,10 @@ class Activity(db.Model):
         db.DateTime
     )
 
+    completed_at = db.Column(
+        db.DateTime
+    )
+
     evidence_notes = db.Column(
         db.Text
     )
@@ -142,9 +172,17 @@ class Activity(db.Model):
 
     def mark_completed(self):
         self.employee_status = ActivityStatus.DONE
+        self.completed_at = datetime.utcnow()
+
+        # Reopening a rejected/verified goal after more work means it needs
+        # a fresh look — don't leave a stale verification decision showing.
+        if self.verification_status != VerificationStatus.PENDING:
+            self.verification_status = VerificationStatus.PENDING
+            self.final_status = FinalStatus.PENDING
 
     def mark_not_completed(self):
         self.employee_status = ActivityStatus.NOT_DONE
+        self.completed_at = None
 
     # ======================================================
     # Manager Verification

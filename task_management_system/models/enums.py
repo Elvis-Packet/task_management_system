@@ -7,8 +7,14 @@ from enum import Enum
 
 class UserRole(Enum):
     SUPER_ADMIN = "SUPER_ADMIN"
-    OPERATIONS_MANAGER = "OPERATIONS_MANAGER"
-    EMPLOYEE = "EMPLOYEE"
+    # The single central Operational Manager — oversees every department and
+    # every user, not one department. Department membership on this account
+    # is informational only; scope comes from utils.rbac.has_org_scope().
+    OPERATIONAL_MANAGER = "OPERATIONAL_MANAGER"
+    # Read-mostly people-operations role: sees organization-wide task
+    # performance and escalation flags, never manages users or tasks.
+    HR = "HR"
+    STAFF = "STAFF"
 
 
 class UserStatus(Enum):
@@ -25,6 +31,8 @@ class PlanStatus(Enum):
     DRAFT = "DRAFT"
     SUBMITTED = "SUBMITTED"
     ACTIVE = "ACTIVE"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
     COMPLETED = "COMPLETED"
     ARCHIVED = "ARCHIVED"
 
@@ -47,23 +55,14 @@ class TaskPriority(Enum):
 # ==========================================================
 
 class TaskStatus(Enum):
+    SUBMITTED = "SUBMITTED"
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     VERIFIED = "VERIFIED"
+    REJECTED = "REJECTED"
     CANCELLED = "CANCELLED"
     OVERDUE = "OVERDUE"
-
-
-# ==========================================================
-# EMPLOYEE ACTIVITY STATUS
-# Used by Activity model
-# ==========================================================
-
-class EmployeeStatus(Enum):
-    PENDING = "PENDING"
-    COMPLETED = "COMPLETED"
-    NOT_COMPLETED = "NOT_COMPLETED"
 
 
 # ==========================================================
@@ -106,12 +105,15 @@ class FinalStatus(Enum):
 class NotificationType(Enum):
     SYSTEM = "SYSTEM"
     ASSIGNED_TASK = "ASSIGNED_TASK"
+    TASK_QUERY = "TASK_QUERY"
     WEEKLY_PLAN = "WEEKLY_PLAN"
     PLAN_REVIEW = "PLAN_REVIEW"
     PERFORMANCE = "PERFORMANCE"
     REMINDER = "REMINDER"
     SECURITY = "SECURITY"
     ANNOUNCEMENT = "ANNOUNCEMENT"
+    COMMENT = "COMMENT"
+    LEAVE_REQUEST = "LEAVE_REQUEST"
 
 
 class NotificationPriority(Enum):
@@ -127,20 +129,102 @@ class NotificationDeliveryStatus(Enum):
     DELIVERED = "DELIVERED"
     FAILED = "FAILED"
 
-class AssignmentStatus(Enum):
-    PENDING = "PENDING"
-    ACCEPTED = "ACCEPTED"
-    COMPLETED = "COMPLETED"
-    VERIFIED = "VERIFIED"
-    REJECTED = "REJECTED"
+
+# ==========================================================
+# AUDIT
+# ==========================================================
 
 class AuditAction(Enum):
     LOGIN = "LOGIN"
+    LOGIN_FAILED = "LOGIN_FAILED"
     LOGOUT = "LOGOUT"
     CREATE = "CREATE"
     UPDATE = "UPDATE"
     DELETE = "DELETE"
+    SUSPEND = "SUSPEND"
+    ACTIVATE = "ACTIVATE"
+    RESET_PASSWORD = "RESET_PASSWORD"
     VERIFY = "VERIFY"
+    REJECT = "REJECT"
     ASSIGN_TASK = "ASSIGN_TASK"
     SUBMIT_PLAN = "SUBMIT_PLAN"
     REVIEW_PLAN = "REVIEW_PLAN"
+    COMMENT = "COMMENT"
+    RAISE_QUERY = "RAISE_QUERY"
+    RESPOND_QUERY = "RESPOND_QUERY"
+    CLOSE_QUERY = "CLOSE_QUERY"
+    # Leave. Spelled out in full rather than reusing CREATE/VERIFY/REJECT
+    # because a leave decision is an employment record — "who approved whose
+    # leave, when, and why" has to be greppable in the audit log on its own,
+    # not inferred from a generic UPDATE against a target_id.
+    LEAVE_REQUEST_CREATED = "LEAVE_REQUEST_CREATED"
+    LEAVE_REQUEST_APPROVED = "LEAVE_REQUEST_APPROVED"
+    LEAVE_REQUEST_REJECTED = "LEAVE_REQUEST_REJECTED"
+    LEAVE_REQUEST_CANCELLED = "LEAVE_REQUEST_CANCELLED"
+    LEAVE_TYPE_MANAGED = "LEAVE_TYPE_MANAGED"
+
+
+# ==========================================================
+# COMMENTS
+# ==========================================================
+
+class CommentTargetType(Enum):
+    TASK = "TASK"
+    WEEKLY_PLAN = "WEEKLY_PLAN"
+    REPORT = "REPORT"
+    ACTIVITY = "ACTIVITY"
+    LEAVE_REQUEST = "LEAVE_REQUEST"
+
+
+# ==========================================================
+# NON-COMPLETION / OVERDUE EXCEPTION HANDLING
+# Recorded by a manager against a specific task — append-only,
+# never overwrites the task's own history.
+# ==========================================================
+
+class NonCompletionReasonCategory(Enum):
+    CUSTOMER_DELAY = "CUSTOMER_DELAY"
+    SYSTEM_DOWNTIME = "SYSTEM_DOWNTIME"
+    AWAITING_APPROVAL = "AWAITING_APPROVAL"
+    INSUFFICIENT_RESOURCES = "INSUFFICIENT_RESOURCES"
+    STAFF_UNAVAILABLE = "STAFF_UNAVAILABLE"
+    EXTERNAL_DEPENDENCY = "EXTERNAL_DEPENDENCY"
+    EMERGENCY = "EMERGENCY"
+    OTHER = "OTHER"
+
+
+class TaskResolution(Enum):
+    RESCHEDULED = "RESCHEDULED"
+    PENDING_DEPENDENCY = "PENDING_DEPENDENCY"
+    ESCALATED = "ESCALATED"
+    WAIVED = "WAIVED"
+    CONTINUE_MONITORING = "CONTINUE_MONITORING"
+
+
+# ==========================================================
+# MANAGER STATUS QUERY ON AN INCOMPLETE TASK
+# A manager asks the assignee for a progress update; the staff
+# member answers on the same record, so "asked but never answered"
+# is a first-class, countable state (HR flags depend on it).
+# ==========================================================
+
+class QueryStatus(Enum):
+    OPEN = "OPEN"
+    ANSWERED = "ANSWERED"
+    CLOSED = "CLOSED"
+
+
+# ==========================================================
+# LEAVE
+#
+# A leave request is never edited into an approved state — it moves
+# PENDING -> APPROVED | REJECTED | CANCELLED exactly once, and the transition
+# is always attributed (reviewed_by / reviewed_at / review_comment). There is
+# deliberately no DRAFT: an unsubmitted application is not a record.
+# ==========================================================
+
+class LeaveStatus(Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    CANCELLED = "CANCELLED"
