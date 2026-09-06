@@ -16,6 +16,10 @@ from services.assigned_task_performance_service import (
     update_assigned_task_performance
 )
 
+from services.notification_service import (
+    notify_task_assigned
+)
+
 
 # ==========================================================
 # CREATE TASK
@@ -74,6 +78,8 @@ def create_task(
     db.session.add(task)
     db.session.commit()
 
+    notify_task_assigned(task)
+
     return True, "Task assigned successfully.", task
 
 
@@ -109,6 +115,8 @@ def update_task(
 
         return False, "Employee not found."
 
+    reassigned = task.employee_id != employee.id
+
     task.employee_id = employee.id
     task.employee_number = employee.employee_number
 
@@ -126,6 +134,10 @@ def update_task(
     task.updated_at = datetime.utcnow()
 
     db.session.commit()
+
+    if reassigned:
+
+        notify_task_assigned(task)
 
     return True, "Task updated successfully."
 

@@ -1,0 +1,229 @@
+{#
+    TPMS NAVBAR
+    Classes follow static/css/navbar.css and
+    static/css/notifications.css
+#}
+
+<nav class="navbar">
+
+    <!-- ================= LEFT ================= -->
+
+    <div class="navbar-left">
+
+        <button
+            class="icon-btn"
+            id="sidebarToggle"
+            type="button"
+            aria-label="Toggle sidebar">
+
+            <i class="fas fa-bars"></i>
+
+        </button>
+
+        <div class="page-title">
+
+            <h2>
+                {{ page_title | default("Dashboard", true) }}
+            </h2>
+
+            <small>
+                {{ current_user.role.value.replace("_", " ") | title }}
+                &middot;
+                {{ current_user.employee_number }}
+            </small>
+
+        </div>
+
+    </div>
+
+    <!-- ================= CENTER ================= -->
+
+    <div class="navbar-center">
+
+        <div class="search-box">
+
+            <i class="fas fa-search"></i>
+
+            <input
+                type="text"
+                id="globalSearch"
+                placeholder="Search tasks, plans, people...">
+
+        </div>
+
+    </div>
+
+    <!-- ================= RIGHT ================= -->
+
+    <div class="navbar-right">
+
+        <div class="clock-card">
+
+            <div id="liveDate"></div>
+
+            <div id="liveClock"></div>
+
+        </div>
+
+        <!-- ============ NOTIFICATIONS ============ -->
+
+        <div class="nav-icon">
+
+            <button
+                class="icon-btn"
+                id="notificationToggle"
+                type="button"
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-label="Notifications">
+
+                <i class="fas fa-bell"></i>
+
+            </button>
+
+            <span
+                class="notification-count"
+                id="notificationCount"
+                style="display:{{ 'none' if not nav_unread_count else 'flex' }};">
+                {{ nav_unread_count if nav_unread_count <= 9 else "9+" }}
+            </span>
+
+            <div
+                class="notification-dropdown"
+                id="notificationDropdown"
+                role="menu">
+
+                <div class="notification-header">
+
+                    <span class="notification-title">
+                        Notifications
+                    </span>
+
+                    <div class="notification-actions">
+
+                        <button
+                            type="button"
+                            id="markAllRead"
+                            style="display:{{ 'none' if not nav_unread_count else 'inline-block' }};
+                                   background:none;border:none;cursor:pointer;
+                                   color:var(--primary);font-weight:600;font-size:13px;">
+                            Mark all read
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <div class="notification-body">
+
+                    {% if nav_notifications %}
+
+                        <div class="notification-list" id="notificationList">
+
+                            {% for note in nav_notifications %}
+
+                                <a
+                                    class="notification-item {% if not note.read %}unread{% endif %}"
+                                    href="{{ url_for('notification.open_notification', notification_id=note.id) }}"
+                                    data-notification-id="{{ note.id }}">
+
+                                    <div class="notification-icon
+                                        {%- if note.priority.value == 'URGENT' %} icon-danger
+                                        {%- elif note.priority.value == 'HIGH' %} icon-warning
+                                        {%- elif note.notification_type.value == 'ASSIGNED_TASK' %} icon-primary
+                                        {%- else %} icon-info{% endif %}">
+
+                                        {% if note.notification_type.value == 'ASSIGNED_TASK' %}
+                                            <i class="fas fa-clipboard-list"></i>
+                                        {% elif note.notification_type.value == 'WEEKLY_PLAN' %}
+                                            <i class="fas fa-calendar-week"></i>
+                                        {% elif note.notification_type.value == 'PLAN_REVIEW' %}
+                                            <i class="fas fa-clipboard-check"></i>
+                                        {% elif note.notification_type.value == 'PERFORMANCE' %}
+                                            <i class="fas fa-chart-line"></i>
+                                        {% elif note.notification_type.value == 'REMINDER' %}
+                                            <i class="fas fa-clock"></i>
+                                        {% elif note.notification_type.value == 'SECURITY' %}
+                                            <i class="fas fa-shield-halved"></i>
+                                        {% else %}
+                                            <i class="fas fa-bell"></i>
+                                        {% endif %}
+
+                                    </div>
+
+                                    <div class="notification-content">
+
+                                        <h4>{{ note.title }}</h4>
+
+                                        <p>{{ note.message }}</p>
+
+                                        <span class="notification-time">
+                                            {{ note.created_at | timeago }}
+                                        </span>
+
+                                        {% if note.priority.value in ['HIGH', 'URGENT'] %}
+                                            <span class="priority priority-{{ 'critical' if note.priority.value == 'URGENT' else 'high' }}">
+                                                {{ note.priority.value | title }}
+                                            </span>
+                                        {% endif %}
+
+                                    </div>
+
+                                </a>
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% else %}
+
+                        <div class="notification-empty">
+
+                            <i class="fas fa-bell-slash"></i>
+
+                            <h3>You're all caught up</h3>
+
+                            <p>New notifications will show up here.</p>
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+                <div class="notification-footer">
+
+                    <a href="{{ url_for('notification.index') }}">
+                        View all notifications
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ============ PROFILE ============ -->
+
+        <div class="profile-menu">
+
+            <img
+                class="profile-photo"
+                src="https://ui-avatars.com/api/?name={{ current_user.full_name | urlencode }}&background=2563EB&color=fff"
+                alt="{{ current_user.full_name }}">
+
+            <div>
+
+                <strong>{{ current_user.full_name }}</strong>
+
+                <small>{{ current_user.email }}</small>
+
+            </div>
+
+            <i class="fas fa-chevron-down"></i>
+
+        </div>
+
+    </div>
+
+</nav>

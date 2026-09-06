@@ -1,0 +1,82 @@
+{#
+    Placeholder sidebar - enough to make base.html render.
+    Classes follow static/css/sidebar.css.
+#}
+
+<aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-header">
+
+        <div class="logo">
+
+            <i class="fas fa-cubes"></i>
+
+            <span class="logo-text">TPMS</span>
+
+        </div>
+
+    </div>
+
+    <nav class="sidebar-menu">
+
+        <a href="{{ url_for('dashboard.employee_dashboard') }}">
+            <i class="fas fa-gauge-high"></i>
+            <span>Dashboard</span>
+        </a>
+
+        {% if current_user.is_employee %}
+
+            <a href="{{ url_for('assigned_task.my_tasks') }}">
+                <i class="fas fa-list-check"></i>
+                <span>My Tasks</span>
+            </a>
+
+        {% else %}
+
+            <a href="{{ url_for('assigned_task.index') }}">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Assigned Tasks</span>
+            </a>
+
+            <a href="{{ url_for('assigned_task.review_queue') }}">
+                <i class="fas fa-clipboard-check"></i>
+                <span>Review Queue</span>
+            </a>
+
+        {% endif %}
+
+        <a href="{{ url_for('notification.index') }}">
+            <i class="fas fa-bell"></i>
+            <span>Notifications</span>
+            {% if nav_unread_count %}
+                <span class="badge">{{ nav_unread_count }}</span>
+            {% endif %}
+        </a>
+
+    </nav>
+
+    <div class="sidebar-footer">
+
+        <div class="user-panel">
+
+            <div class="user-details">
+
+                <strong>{{ current_user.full_name }}</strong>
+
+                <span class="online-status">
+                    <span class="online-dot"></span>
+                    Online
+                </span>
+
+            </div>
+
+        </div>
+
+        <a href="{{ url_for('auth.logout') }}">
+            <i class="fas fa-right-from-bracket"></i>
+            <span>Logout</span>
+        </a>
+
+    </div>
+
+</aside>
