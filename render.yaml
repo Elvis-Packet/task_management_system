@@ -35,6 +35,13 @@ services:
       # One account per role that cannot be created from inside the app:
       # the Super Admin, the central Operational Manager, and HR. Everyone
       # else is created through User Management.
+      #
+      # REQUIRED, not optional. create_seed_accounts() skips any seed whose
+      # email or password is blank, and it does so silently — so leaving
+      # these unset produces a database with no users at all, and every
+      # login correctly answers "Invalid email or password" with nothing in
+      # the logs to explain why. If nobody can sign in to a fresh deploy,
+      # check these first.
       - key: SEED_SUPER_ADMIN_EMAIL
         sync: false
       - key: SEED_SUPER_ADMIN_PASSWORD
@@ -46,4 +53,23 @@ services:
       - key: SEED_HR_EMAIL
         sync: false
       - key: SEED_HR_PASSWORD
+        sync: false
+      # Outbound email, also set in the dashboard. Leaving MAIL_SERVER unset
+      # does not error — EmailService logs the message to the service log
+      # instead — so the failure mode is silent: password-reset tokens never
+      # arrive, and neither do the leave submission/approval/rejection
+      # notifications. Port 587 is STARTTLS, so USE_TLS true / USE_SSL false.
+      - key: MAIL_SERVER
+        sync: false
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USE_TLS
+        value: "True"
+      - key: MAIL_USE_SSL
+        value: "False"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_DEFAULT_SENDER
         sync: false
