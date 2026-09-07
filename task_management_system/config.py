@@ -64,6 +64,13 @@ class Config:
 
     APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
 
+    # Where the React app is served. Used to build clickable links in
+    # outbound email; falls back to the first configured CORS origin.
+    FRONTEND_BASE_URL = (
+        os.getenv("FRONTEND_BASE_URL")
+        or os.getenv("CORS_ORIGINS", "http://localhost:4173").split(",")[0].strip()
+    ).rstrip("/")
+
     SEED_SUPER_ADMIN_EMAIL = os.getenv("SEED_SUPER_ADMIN_EMAIL")
 
     SEED_SUPER_ADMIN_PASSWORD = os.getenv("SEED_SUPER_ADMIN_PASSWORD")
