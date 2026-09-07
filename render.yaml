@@ -42,6 +42,12 @@ services:
       # login correctly answers "Invalid email or password" with nothing in
       # the logs to explain why. If nobody can sign in to a fresh deploy,
       # check these first.
+      #
+      # The accounts are matched by employee number (SA001/OM001/HR001), so
+      # changing an address here and redeploying moves that account to the
+      # new address — look for "Moved SA001 from … to …" in the deploy log.
+      # The passwords are only read when the account is first created;
+      # changing one here never resets an account that already exists.
       - key: SEED_SUPER_ADMIN_EMAIL
         sync: false
       - key: SEED_SUPER_ADMIN_PASSWORD

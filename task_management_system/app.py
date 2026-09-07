@@ -169,11 +169,23 @@ def handle_unexpected_error(e):
 
 def create_seed_accounts():
     """Idempotently create the real bootstrap accounts from the spec.
-    Checked by email, never duplicated — no throwaway/demo accounts are seeded.
+    Matched on employee_number, never duplicated — no throwaway/demo accounts
+    are seeded.
 
     One account per role that cannot be created from inside the app: the
     Super Admin (who creates everyone else), the single central Operational
-    Manager, and HR. Staff are always created through User Management."""
+    Manager, and HR. Staff are always created through User Management.
+
+    The employee number, not the address, is what identifies a bootstrap
+    account, so changing a SEED_*_EMAIL in the environment moves the existing
+    account to the new address on the next boot. Matching on email instead
+    would leave an already-seeded database stranded on the old address: the
+    lookup misses, the insert then collides with the unique employee_number,
+    and the caller's except swallows it as "database not ready yet".
+
+    Only the address is reconciled. Passwords are left alone once the row
+    exists, so a password the holder has since changed in-app is never
+    silently reset back to the environment value on restart."""
 
     seeds = [
         {
@@ -205,7 +217,7 @@ def create_seed_accounts():
         },
     ]
 
-    created_any = False
+    changed_any = False
 
     for data in seeds:
 
@@ -214,6 +226,33 @@ def create_seed_accounts():
 
         email = data["email"].strip().lower()
 
+        existing = User.query.filter_by(employee_number=data["employee_number"]).first()
+
+        if existing:
+
+            if existing.email == email:
+                continue
+
+            # Somebody else already holds the new address — taking it would
+            # break the unique index, so leave the account as it is and say
+            # so rather than failing the whole boot-time seed.
+            if User.query.filter_by(email=email).first():
+                print(
+                    f"Cannot move {data['employee_number']} to {email}: "
+                    "another user already has that email"
+                )
+                continue
+
+            print(f"Moved {data['employee_number']} from {existing.email} to {email}")
+
+            existing.email = email
+
+            changed_any = True
+
+            continue
+
+        # No account under this employee number yet, but the address may
+        # already belong to a user created through User Management.
         if User.query.filter_by(email=email).first():
             continue
 
@@ -232,11 +271,11 @@ def create_seed_accounts():
 
         db.session.add(user)
 
-        created_any = True
+        changed_any = True
 
         print(f"Seeded {data['role'].value} account: {email}")
 
-    if created_any:
+    if changed_any:
         db.session.commit()
 
 
