@@ -462,10 +462,44 @@ class WeeklyPlanService:
         plan.completion_percentage = round((done_weight / total_weight) * 100, 2)
 
     @staticmethod
+    def completion_lock_reason(goal):
+        """Whether an approved plan's goal may be marked done *yet*.
+
+        A planned item is committed to a specific day. Work on a future day
+        cannot honestly be reported finished before that day arrives, so
+        completion stays locked until the activity_date and is open from
+        then on — being late is a verification matter for the manager, not
+        a reason to block the employee from recording what they did.
+
+        app_today() rather than the server's UTC date, for the same reason
+        day_lock_reason uses it: the boundary has to fall at the employee's
+        own local midnight, not up to three hours after it.
+
+        Returns None when completion is allowed, otherwise the exact
+        rejection message."""
+
+        if not goal.activity_date:
+            return None
+
+        today = app_today()
+
+        if goal.activity_date > today:
+            return (
+                f"“{goal.title}” is scheduled for "
+                f"{goal.activity_date.strftime('%A, %d %b %Y')} — it can't be "
+                f"marked done before that day."
+            )
+
+        return None
+
+    @staticmethod
     def mark_goal(goal, done):
         """Staff records whether a goal within their approved plan is done —
         the same real-timestamped completion record AssignedTask uses,
-        just via Activity's own (previously unwired) status fields."""
+        just via Activity's own (previously unwired) status fields.
+
+        The caller is responsible for consulting completion_lock_reason
+        first; this method only writes."""
 
         if done:
             goal.mark_completed()

@@ -226,6 +226,27 @@ def serialize_task(task, include_comments=None, include_history=False):
 
     latest_exception = task.exceptions[-1] if task.exceptions else None
 
+    # Surfaced so the client can disable the Complete control and say why,
+    # instead of restating the date rule — the server stays the only place
+    # that decides, exactly as with a weekly-plan goal.
+    from services.assigned_task_service import AssignedTaskService
+
+    # Either gate closes the Complete control, so they share one pair of
+    # fields; the date rule is reported first because it's the more
+    # fundamental "this day hasn't arrived" refusal.
+    #
+    # Only computed for the two statuses /complete actually accepts. Beyond
+    # saving a per-task query on every list response (chronological_lock_
+    # reason hits the database), a lock reason on an already-completed task
+    # would be noise the client has to know to ignore.
+    if task.status in (TaskStatus.PENDING, TaskStatus.IN_PROGRESS):
+        task_completion_locked_reason = (
+            AssignedTaskService.completion_lock_reason(task)
+            or AssignedTaskService.chronological_lock_reason(task)
+        )
+    else:
+        task_completion_locked_reason = None
+
     data = {
         "id": task.id,
         "employee_id": task.employee_id,
@@ -238,6 +259,10 @@ def serialize_task(task, include_comments=None, include_history=False):
         "manager_name": task.manager.full_name if task.manager else None,
         "assigner_name": task.manager.full_name if task.manager else None,
         "created_by": "staff" if task.submitted_at else "manager",
+        # True only for a task the staff member raised for themselves — the
+        # category exempt from the completion date lock. Distinct from
+        # created_by, which reports "staff" for plan-derived tasks too.
+        "self_assigned": AssignedTaskService.is_self_assigned(task),
         "title": task.title,
         "description": task.description,
         "expected_outcome": task.expected_outcome,
@@ -247,6 +272,8 @@ def serialize_task(task, include_comments=None, include_history=False):
         "verified": task.status == TaskStatus.VERIFIED,
         "assigned_date": _iso(task.assigned_date) if task.assigned_date else None,
         "assigned_time": task.assigned_time.strftime("%H:%M") if task.assigned_time else None,
+        "completion_locked": task_completion_locked_reason is not None,
+        "completion_locked_reason": task_completion_locked_reason,
         "due_date": _iso(task.due_date) if task.due_date else None,
         "due_time": task.due_time.strftime("%H:%M") if task.due_time else None,
         "created_at": _iso(task.created_at),
@@ -452,8 +479,14 @@ def serialize_goal(activity, include_comments=None):
         return None
 
     from models.assigned_task import AssignedTask
+    from services.weekly_plan_service import WeeklyPlanService
 
     linked_task = AssignedTask.query.filter_by(related_activity_id=activity.id).first()
+
+    # Surfaced so the client can disable the control and say why, rather than
+    # restating the date rule itself — the server stays the only place that
+    # decides, and the two can't drift.
+    completion_locked_reason = WeeklyPlanService.completion_lock_reason(activity)
 
     data = {
         "id": activity.id,
@@ -469,6 +502,8 @@ def serialize_goal(activity, include_comments=None):
         "tasks": activity.task_count,
         "weight": activity.weight,
         "done": activity.employee_status == ActivityStatus.DONE,
+        "completion_locked": completion_locked_reason is not None,
+        "completion_locked_reason": completion_locked_reason,
         "employee_status": activity.employee_status.value.lower(),
         "verification_status": activity.verification_status.value.lower(),
         "verified": activity.verification_status == VerificationStatus.VERIFIED,

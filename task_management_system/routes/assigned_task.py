@@ -414,6 +414,17 @@ def complete_task(task_id):
     if task.status not in (TaskStatus.PENDING, TaskStatus.IN_PROGRESS):
         return err("Only an approved, in-progress task can be marked complete.", 409)
 
+    # Work scheduled for a future day can't be reported finished yet — the
+    # same rule the weekly plan applies to the Activity this task came from.
+    locked = AssignedTaskService.completion_lock_reason(task)
+    if locked:
+        return err(locked, 409)
+
+    # And the week's work is closed out in date order, earliest day first.
+    out_of_order = AssignedTaskService.chronological_lock_reason(task)
+    if out_of_order:
+        return err(out_of_order, 409)
+
     task = AssignedTaskService.complete_task(task)
 
     NotificationService.notify(

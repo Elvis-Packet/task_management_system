@@ -399,6 +399,16 @@ def update_goal(plan_id, goal_id):
             return err("Only goals in an approved plan can be marked done.", 409)
 
         done = bool(data.get("done", True))
+
+        # A goal can't be reported finished before the day it was planned
+        # for. Only completion is gated — clearing a goal back to not-done
+        # stays available, since that's a correction, not a claim about
+        # work that hasn't happened yet.
+        if done:
+            locked = WeeklyPlanService.completion_lock_reason(goal)
+            if locked:
+                return err(locked, 409)
+
         goal = WeeklyPlanService.mark_goal(goal, done)
 
         AuditService.log_action(
