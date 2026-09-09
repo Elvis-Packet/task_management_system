@@ -1,3 +1,4 @@
+import threading
 from html import escape
 
 from flask import current_app
@@ -23,12 +24,32 @@ class EmailService:
             )
             return False
 
-        try:
-            mail.send(Message(subject=subject, recipients=[to], body=body, html=html))
-            return True
-        except Exception as exc:  # SMTP misconfig shouldn't 500 the request
-            current_app.logger.error("Failed to send email to %s: %s", to, exc)
-            return False
+        # Delivery happens off the request thread. Flask-Mail passes no
+        # timeout to smtplib, so a host that accepts the TCP connection and
+        # then stalls — the normal failure when outbound SMTP is throttled or
+        # blocked, as on many hosts — blocks forever. Waiting inline, that
+        # outlasts gunicorn's 30s worker timeout, and the worker is killed
+        # before the except below can run: the caller gets a 500 from a
+        # request that had already done its real work and committed.
+        #
+        # The message is built here, while the request context still exists
+        # (Message resolves MAIL_DEFAULT_SENDER from it), and only the
+        # network call is handed to the thread.
+        app = current_app._get_current_object()
+        message = Message(subject=subject, recipients=[to], body=body, html=html)
+
+        def deliver():
+            with app.app_context():
+                try:
+                    mail.send(message)
+                except Exception as exc:
+                    app.logger.error("Failed to send email to %s: %s", to, exc)
+
+        threading.Thread(target=deliver, name=f"mail:{to}", daemon=True).start()
+
+        # "Handed off", not "delivered" — nobody can know the latter yet, and
+        # no caller should block to find out.
+        return True
 
     @staticmethod
     def send_notification(recipient, title, message, action_url=None):
@@ -113,10 +134,14 @@ class EmailService:
 
         token_html = escape(raw_token)
         link_html = escape(reset_link)
+        # escape() raises on None. first_name is NOT NULL today, but this
+        # function must not be the thing that 500s if that ever stops being
+        # true — the same guard the greeting in send_notification already has.
+        name_html = escape(user.first_name or "")
 
         html = f"""\
 <div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#1f2937">
-  <p>Hello {escape(user.first_name)},</p>
+  <p>Hello {name_html},</p>
   <p>{escape(reason)}</p>
   <p style="margin-bottom:6px">Your reset token:</p>
   <p style="margin-top:0">
