@@ -1,4 +1,6 @@
+import re
 import threading
+from datetime import datetime
 from html import escape
 
 from flask import current_app
@@ -6,6 +8,28 @@ from flask_mail import Message
 
 from extensions import mail
 from services.auth_service import RESET_TOKEN_TTL
+
+# Delivery now happens on a background thread, so a failure is invisible to
+# whoever triggered it — the request succeeded, and only the platform log
+# holds the reason. That log is not always reachable, which is exactly the
+# situation this exists for: the last outcome is kept in memory and reported
+# by /health, so "it says sent but nothing arrives" is diagnosable from
+# outside the box.
+#
+# In-process and per-worker: it survives no restart and is not a record of
+# anything. It is a diagnostic, not a mail log.
+_last_delivery = {"at": None, "ok": None, "error": None}
+
+_EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
+
+
+def _redact(text):
+    """/health is public, so an address must never reach it."""
+    return _EMAIL_RE.sub("<address>", str(text))[:300]
+
+
+def last_delivery_status():
+    return dict(_last_delivery)
 
 
 class EmailService:
@@ -42,8 +66,18 @@ class EmailService:
             with app.app_context():
                 try:
                     mail.send(message)
+                    _last_delivery.update(
+                        at=datetime.utcnow().isoformat(timespec="seconds"),
+                        ok=True,
+                        error=None,
+                    )
                 except Exception as exc:
                     app.logger.error("Failed to send email to %s: %s", to, exc)
+                    _last_delivery.update(
+                        at=datetime.utcnow().isoformat(timespec="seconds"),
+                        ok=False,
+                        error=f"{type(exc).__name__}: {_redact(exc)}",
+                    )
 
         threading.Thread(target=deliver, name=f"mail:{to}", daemon=True).start()
 

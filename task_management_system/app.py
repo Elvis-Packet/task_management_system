@@ -124,6 +124,8 @@ app.register_blueprint(leave_bp, url_prefix=f"{API_PREFIX}/leave")
 
 @app.get(f"{API_PREFIX}/health")
 def health():
+    from services.email_service import last_delivery_status
+
     """Reports which build is actually serving, not just that something is.
 
     Without this, "is the fix deployed?" is unanswerable from outside, and
@@ -141,6 +143,20 @@ def health():
             "version": Config.APP_VERSION,
             "commit": (os.getenv("RENDER_GIT_COMMIT") or "local")[:7],
             "mail_configured": bool(Config.MAIL_SERVER),
+            "mail_settings": {
+                # Presence only, never values. Missing MAIL_DEFAULT_SENDER is
+                # a silent killer: Flask-Mail refuses a message with no
+                # sender, and with delivery on a thread that refusal is
+                # invisible to the caller.
+                "server": Config.MAIL_SERVER or None,
+                "port": Config.MAIL_PORT,
+                "use_tls": Config.MAIL_USE_TLS,
+                "use_ssl": Config.MAIL_USE_SSL,
+                "username_set": bool(Config.MAIL_USERNAME),
+                "password_set": bool(Config.MAIL_PASSWORD),
+                "default_sender_set": bool(Config.MAIL_DEFAULT_SENDER),
+            },
+            "last_mail_delivery": last_delivery_status(),
         },
     })
 
