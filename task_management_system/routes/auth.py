@@ -1,4 +1,4 @@
-from flask import Blueprint, request, current_app
+from flask import Blueprint, request
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -127,18 +127,11 @@ def forgot_password():
     user, raw_token = AuthService.request_password_reset(email)
 
     if user and raw_token:
-        frontend_origin = (current_app.config.get("CORS_ORIGINS") or ["http://localhost:5173"])[0]
-        reset_link = f"{frontend_origin}/reset-password?token={raw_token}"
-
-        EmailService.send(
-            to=user.email,
-            subject=f"{current_app.config.get('APP_NAME')} — Password Reset",
-            body=(
-                f"Hello {user.first_name},\n\n"
-                f"Use the link below to reset your password. It expires in 1 hour.\n\n"
-                f"{reset_link}\n\n"
-                f"If you did not request this, you can ignore this email."
-            ),
+        EmailService.send_password_reset(
+            user,
+            raw_token,
+            reason="Use the link below to reset your password.",
+            closing="If you did not request this, you can ignore this email.",
         )
 
     return ok(message=generic_message)

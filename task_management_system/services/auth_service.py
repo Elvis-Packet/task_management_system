@@ -6,7 +6,10 @@ from extensions import db, bcrypt
 from models.user import User
 from models.enums import UserStatus
 
-RESET_TOKEN_TTL = timedelta(hours=1)
+# Governs both the stored expiry and the wording of the email that carries the
+# token — EmailService derives its "expires in N minutes" line from this, so
+# changing it here is the only edit needed.
+RESET_TOKEN_TTL = timedelta(minutes=10)
 
 
 def _hash_token(raw_token):

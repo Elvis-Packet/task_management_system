@@ -1,4 +1,4 @@
-from flask import Blueprint, request, current_app
+from flask import Blueprint, request
 
 from extensions import db
 from models.user import User
@@ -168,10 +168,19 @@ def update_user(user_id):
     if data.get("status") and current_user.id == user.id:
         return err("You cannot change your own account status.", 403)
 
-    if data.get("email"):
-        existing = User.query.filter(User.email == data["email"].strip().lower(), User.id != user.id).first()
+    new_email = (data.get("email") or "").strip().lower()
+
+    if new_email:
+        existing = User.query.filter(User.email == new_email, User.id != user.id).first()
         if existing:
             return err("A user with this email already exists.", 409)
+
+    # Moving an account to a different address changes who can sign in to it,
+    # so it is treated exactly like the reset action: the new address gets a
+    # one-time link and the administrator never sets or sees a password.
+    # Captured before the write, while user.email is still the old value.
+    email_changed = bool(new_email) and new_email != user.email
+    previous_email = user.email
 
     _clean_department_id(data)
     if data.get("department_id") and not Department.query.get(data["department_id"]):
@@ -181,6 +190,8 @@ def update_user(user_id):
     # changed — a department or role move is exactly the kind of edit someone
     # will need to trace back later.
     changes = []
+    if email_changed:
+        changes.append(f"email {previous_email} -> {new_email}")
     if data.get("role") and UserRole[data["role"].upper()] != user.role:
         changes.append(f"role {user.role.value} -> {data['role'].upper()}")
     if "department_id" in data and data["department_id"] != user.department_id:
@@ -195,7 +206,42 @@ def update_user(user_id):
     detail = f" ({'; '.join(changes)})" if changes else ""
     AuditService.log_action(current_user, AuditAction.UPDATE, f"Updated user {user.email}{detail}.")
 
-    return ok({"user": serialize_user(user)}, message="User updated successfully.")
+    # The address is now the new one, so the token is issued against it and the
+    # link lands where the account can actually be reached. A suspended or
+    # locked account gets no token (AuthService's rule), so no link is claimed.
+    password_reset_sent = False
+
+    if email_changed:
+        _, raw_token = AuthService.request_password_reset(user.email)
+
+        if raw_token:
+            EmailService.send_password_reset(
+                user,
+                raw_token,
+                reason=(
+                    f"An administrator changed the email address on your account "
+                    f"from {previous_email} to {user.email}. Use the link below to set "
+                    f"a new password, then sign in with your new address."
+                ),
+            )
+            password_reset_sent = True
+
+            AuditService.log_action(
+                current_user,
+                AuditAction.RESET_PASSWORD,
+                f"Triggered password reset for {user.email} after an email address change.",
+            )
+
+    message = (
+        "User updated. A password reset link has been sent to the new email address."
+        if password_reset_sent
+        else "User updated successfully."
+    )
+
+    return ok(
+        {"user": serialize_user(user), "password_reset_sent": password_reset_sent},
+        message=message,
+    )
 
 
 @users_bp.post("/<int:user_id>/suspend")
@@ -282,17 +328,10 @@ def admin_reset_password(user_id):
     _, raw_token = AuthService.request_password_reset(user.email)
 
     if raw_token:
-        frontend_origin = (current_app.config.get("CORS_ORIGINS") or ["http://localhost:5173"])[0]
-        reset_link = f"{frontend_origin}/reset-password?token={raw_token}"
-
-        EmailService.send(
-            to=user.email,
-            subject=f"{current_app.config.get('APP_NAME')} — Password Reset",
-            body=(
-                f"Hello {user.first_name},\n\n"
-                f"An administrator triggered a password reset for your account.\n\n"
-                f"{reset_link}\n\nThis link expires in 1 hour."
-            ),
+        EmailService.send_password_reset(
+            user,
+            raw_token,
+            reason="An administrator triggered a password reset for your account.",
         )
 
     AuditService.log_action(current_user, AuditAction.RESET_PASSWORD, f"Triggered password reset for {user.email}.")
