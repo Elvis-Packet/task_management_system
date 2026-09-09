@@ -1,6 +1,11 @@
 __pycache__/
 *.pyc
 .env
+# Backups and variants of .env hold the same live credentials the file
+# itself does — ".env" alone matches only the exact name, so a copy like
+# .env.bak.20260909 was staged for commit once already.
+.env.*
+!.env.example
 venv/
 .venv/
 instance/
