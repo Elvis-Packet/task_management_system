@@ -60,11 +60,31 @@ services:
         sync: false
       - key: SEED_HR_PASSWORD
         sync: false
-      # Outbound email, also set in the dashboard. Leaving MAIL_SERVER unset
-      # does not error — EmailService logs the message to the service log
-      # instead — so the failure mode is silent: password-reset tokens never
-      # arrive, and neither do the leave submission/approval/rejection
-      # notifications. Port 587 is STARTTLS, so USE_TLS true / USE_SSL false.
+      # Outbound email.
+      #
+      # SMTP DOES NOT WORK FROM HERE. A connect to port 587 from this
+      # service times out at the network level — "TimeoutError: [Errno 110]
+      # Connection timed out" — because the free tier blocks outbound SMTP.
+      # The same credentials connect in under two seconds from a developer
+      # machine, so this is a property of the host, not of the mailbox or
+      # the code. Do not spend time re-testing MAIL_* here; it cannot work.
+      #
+      # Mail therefore leaves over HTTPS via Resend. Set RESEND_API_KEY in
+      # the dashboard, and keep MAIL_DEFAULT_SENDER as the From address —
+      # it must be at a domain verified in the Resend account, or every
+      # send comes back 403 with "domain is not verified".
+      #
+      # Check /api/v1/health after any change: mail_transport says which
+      # path is active, and last_mail_delivery carries the outcome of the
+      # most recent send with the provider's own error text.
+      - key: RESEND_API_KEY
+        sync: false
+      # The MAIL_* block below is the local-development transport, kept as
+      # the fallback when RESEND_API_KEY is absent. Leaving both unset does
+      # not error: EmailService logs each message to the service log
+      # instead, so the failure mode is silent — password-reset tokens
+      # never arrive, and neither do task or leave notifications.
+      # Port 587 is STARTTLS, so USE_TLS true / USE_SSL false.
       - key: MAIL_SERVER
         sync: false
       - key: MAIL_PORT

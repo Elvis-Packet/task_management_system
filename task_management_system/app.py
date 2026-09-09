@@ -124,16 +124,18 @@ app.register_blueprint(leave_bp, url_prefix=f"{API_PREFIX}/leave")
 
 @app.get(f"{API_PREFIX}/health")
 def health():
-    from services.email_service import last_delivery_status
-
     """Reports which build is actually serving, not just that something is.
 
     Without this, "is the fix deployed?" is unanswerable from outside, and
     a silently failing build looks identical to a bug in the new code —
     the platform keeps serving the last good deploy either way. commit
-    comes from RENDER_GIT_COMMIT, which Render injects; mail_configured
-    distinguishes "email disabled, logging instead" from a real send
-    attempt, which is the difference between two very different faults."""
+    comes from RENDER_GIT_COMMIT, which Render injects; mail_transport and
+    last_mail_delivery say which way mail left and whether it arrived,
+    which is how the SMTP block on this host was finally identified."""
+
+    # Imported here rather than at module scope: email_service pulls in the
+    # services layer, and app.py is what that layer is imported into.
+    from services.email_service import active_transport, last_delivery_status
 
     return jsonify({
         "success": True,
@@ -142,8 +144,10 @@ def health():
             "app": Config.APP_NAME,
             "version": Config.APP_VERSION,
             "commit": (os.getenv("RENDER_GIT_COMMIT") or "local")[:7],
-            "mail_configured": bool(Config.MAIL_SERVER),
+            "mail_configured": bool(Config.RESEND_API_KEY or Config.MAIL_SERVER),
+            "mail_transport": active_transport(),
             "mail_settings": {
+                "resend_key_set": bool(Config.RESEND_API_KEY),
                 # Presence only, never values. Missing MAIL_DEFAULT_SENDER is
                 # a silent killer: Flask-Mail refuses a message with no
                 # sender, and with delivery on a thread that refusal is

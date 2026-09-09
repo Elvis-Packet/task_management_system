@@ -60,6 +60,13 @@ class Config:
 
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER") or None
 
+    # Sending over HTTPS instead of SMTP. Set this in an environment where
+    # outbound SMTP is blocked — Render's free tier drops the connection to
+    # port 587 entirely — and EmailService uses it in preference to MAIL_*.
+    # MAIL_DEFAULT_SENDER is still the From address, and must be an address
+    # at a domain verified with Resend.
+    RESEND_API_KEY = os.getenv("RESEND_API_KEY") or None
+
     APP_NAME = os.getenv("APP_NAME", "Survitec Task Performance Management System")
 
     APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
