@@ -31,6 +31,47 @@ class EmailService:
             return False
 
     @staticmethod
+    def send_notification(recipient, title, message, action_url=None):
+        """The email counterpart of an in-app notification. Called from
+        NotificationService.notify so the two always carry the same words —
+        the subject is the notification's title, the body its message, and
+        neither is composed twice in two places.
+
+        Best-effort by design: send() already swallows SMTP failures and
+        no-ops when MAIL_SERVER is unconfigured, so a mail problem can
+        never cost someone the in-app record, which is the durable one."""
+
+        if not recipient or not recipient.email:
+            return False
+
+        greeting = f"Hello {recipient.first_name}," if recipient.first_name else "Hello,"
+
+        lines = [greeting, "", message]
+
+        if action_url:
+            lines += ["", action_url]
+
+        html_action = (
+            f'<p><a href="{escape(action_url)}">{escape(action_url)}</a></p>'
+            if action_url else ""
+        )
+
+        html = f"""\
+<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#1f2937">
+  <p>{escape(greeting)}</p>
+  <p><strong>{escape(title)}</strong></p>
+  <p>{escape(message)}</p>
+  {html_action}
+</div>"""
+
+        return EmailService.send(
+            to=recipient.email,
+            subject=f"{current_app.config.get('APP_NAME')} — {title}",
+            body="\n".join(lines),
+            html=html,
+        )
+
+    @staticmethod
     def send_password_reset(user, raw_token, reason, closing=None):
         """The one place a raw reset token becomes the email a user actually
         receives. Every route that issues a link — self-service forgot-password,

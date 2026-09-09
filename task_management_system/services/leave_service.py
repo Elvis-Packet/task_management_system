@@ -17,7 +17,6 @@ from utils.appdate import app_today
 from utils.enum_map import leave_status_from_fe
 from utils.rbac import Permission, has_permission, permissions_for
 from services.notification_service import NotificationService
-from services.email_service import EmailService
 
 
 # A request in one of these states still occupies the employee's calendar, so
@@ -55,7 +54,7 @@ class LeaveService:
 
     Built entirely on the machinery the application already has: scoping
     follows the same scoped_query() idiom as tasks and queries, decisions are
-    announced through NotificationService and EmailService, and every
+    announced through NotificationService, and every
     transition is recorded by AuditService from the route. What this service
     owns that nothing else could express is the leave calendar itself — the
     overlap rule, the notice/backdating policy, and "who is away on a given
@@ -636,10 +635,11 @@ class LeaveService:
     # ==================================================================
     # ANNOUNCEMENTS
     #
-    # Both channels go through the services that already exist —
-    # NotificationService writes the in-app record, EmailService sends the
-    # mail and no-ops safely when SMTP is unconfigured. There is deliberately
-    # no leave-specific notification table or mailer.
+    # Both channels go through NotificationService.notify, which writes the
+    # in-app record and sends the matching email. Leave used to send its own
+    # mail here; it no longer does, so leave and every other module now
+    # announce identically. There is deliberately no leave-specific
+    # notification table or mailer.
     # ==================================================================
 
     @staticmethod
@@ -663,10 +663,8 @@ class LeaveService:
             notification_type=NotificationType.LEAVE_REQUEST,
             priority=priority,
             action_url=action_url,
+            email=email,
         )
-
-        if email and recipient and recipient.email:
-            EmailService.send(recipient.email, title, message)
 
     @staticmethod
     def notify_submitted(request):

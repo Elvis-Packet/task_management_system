@@ -397,6 +397,11 @@ def update_progress(task_id):
         title="Task progress updated",
         message=f"{current_user.full_name} updated '{task.title}' to {task.progress}%." + (f" \"{comment}\"" if comment else ""),
         notification_type=NotificationType.ASSIGNED_TASK,
+        # In-app only: a staff member can move the slider several times an
+        # hour, and a manager who wants that detail is already looking at
+        # the task. Completion — the moment that needs their attention —
+        # sends its own email below.
+        email=False,
     )
 
     return ok({"task": serialize_task(task)}, message="Progress updated.")
