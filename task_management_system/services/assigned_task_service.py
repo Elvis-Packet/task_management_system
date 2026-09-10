@@ -1,5 +1,7 @@
 from datetime import datetime, date
 
+from flask import current_app
+
 from extensions import db
 from models.user import User
 from models.assigned_task import AssignedTask
@@ -172,6 +174,36 @@ class AssignedTaskService:
         )
 
     @staticmethod
+    def _email_assignment(tasks):
+        """Email the assignee(s) that work has landed.
+
+        Grouped per employee, mirroring how the route layer raises one in-app
+        alert per employee rather than one per task — a four-task assignment
+        produces one email, not four.
+
+        Never raises. The tasks are already committed by the time this runs,
+        so a mail problem must not turn a successful assignment into a 500;
+        EmailService.send is already non-blocking and swallows its own
+        delivery failures, and this guards the composition step above it."""
+
+        from services.email_service import EmailService
+
+        by_employee = {}
+
+        for task in tasks:
+            if task.employee:
+                by_employee.setdefault(task.employee.id, []).append(task)
+
+        for employee_tasks in by_employee.values():
+            try:
+                EmailService.send_tasks_assigned(employee_tasks)
+            except Exception as exc:
+                current_app.logger.error(
+                    "Assignment email failed for task(s) %s: %s",
+                    [t.id for t in employee_tasks], exc,
+                )
+
+    @staticmethod
     def create_task(data, manager):
         """Manager/Super Admin assigns a task directly — the assigner's own
         authority is the approval, so it starts ready to work (PENDING)."""
@@ -182,6 +214,8 @@ class AssignedTaskService:
         db.session.commit()
 
         PerformanceService.recalculate(task.employee)
+
+        AssignedTaskService._email_assignment([task])
 
         return task
 
@@ -199,6 +233,8 @@ class AssignedTaskService:
 
         for employee in {t.employee for t in tasks if t.employee}:
             PerformanceService.recalculate(employee)
+
+        AssignedTaskService._email_assignment(tasks)
 
         return tasks
 
