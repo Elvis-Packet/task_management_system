@@ -60,6 +60,17 @@ class Config:
 
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER") or None
 
+    # Where the frontend actually lives — the origin every emailed link is
+    # built from. Defaults to the first CORS origin, which is what the code
+    # used to infer, but that coupling was accidental: CORS_ORIGINS is a
+    # permission list whose order carries no meaning, so adding a custom
+    # domain in the wrong position would have silently pointed every
+    # password-reset link at the wrong site.
+    FRONTEND_URL = (
+        os.getenv("FRONTEND_URL")
+        or (CORS_ORIGINS[0] if CORS_ORIGINS else "http://localhost:5173")
+    ).rstrip("/")
+
     # Sending over HTTPS instead of SMTP. Set this in an environment where
     # outbound SMTP is blocked — Render's free tier drops the connection to
     # port 587 entirely — and EmailService uses it in preference to MAIL_*.

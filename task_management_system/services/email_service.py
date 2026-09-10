@@ -166,23 +166,31 @@ class EmailService:
         the subject is the notification's title, the body its message, and
         neither is composed twice in two places.
 
-        Best-effort by design: send() already swallows SMTP failures and
-        no-ops when MAIL_SERVER is unconfigured, so a mail problem can
-        never cost someone the in-app record, which is the durable one."""
+        Best-effort by design: send() already swallows delivery failures and
+        no-ops when no transport is configured, so a mail problem can never
+        cost someone the in-app record, which is the durable one."""
 
         if not recipient or not recipient.email:
             return False
 
         greeting = f"Hello {recipient.first_name}," if recipient.first_name else "Hello,"
 
+        # Callers pass the same path the in-app notification links to, e.g.
+        # "/my-leave". That resolves inside the app but means nothing in an
+        # inbox, where a bare path is not a link at all — so it is made
+        # absolute against the deployed frontend before it goes in an email.
+        link = action_url
+        if link and link.startswith("/"):
+            link = f"{current_app.config['FRONTEND_URL']}{link}"
+
         lines = [greeting, "", message]
 
-        if action_url:
-            lines += ["", action_url]
+        if link:
+            lines += ["", link]
 
         html_action = (
-            f'<p><a href="{escape(action_url)}">{escape(action_url)}</a></p>'
-            if action_url else ""
+            f'<p><a href="{escape(link)}">{escape(link)}</a></p>'
+            if link else ""
         )
 
         html = f"""\
@@ -214,8 +222,7 @@ class EmailService:
 
         `reason` is the single line explaining why the message arrived."""
 
-        frontend_origin = (current_app.config.get("CORS_ORIGINS") or ["http://localhost:5173"])[0]
-        reset_link = f"{frontend_origin}/reset-password?token={raw_token}"
+        reset_link = f"{current_app.config['FRONTEND_URL']}/reset-password?token={raw_token}"
 
         # Stated in one place, derived from the constant that actually governs
         # expiry, so the wording cannot outlive a change to the TTL.

@@ -9,7 +9,17 @@ services:
     rootDir: task_management_system
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: flask db upgrade && gunicorn --bind 0.0.0.0:$PORT app:app
+    # --threads 4: one sync worker serves exactly one request at a time, so a
+    #   single slow call (a report, a cold database connection) queues every
+    #   other user behind it. Threads add concurrency without a second worker
+    #   process, which this instance does not have the memory for.
+    # --timeout 60: the default 30s killed a worker mid-send back when mail
+    #   went out inline, and the SIGKILL surfaced as a 500 no except clause
+    #   could catch. Mail is off the request path now, but report generation
+    #   can still legitimately exceed 30s on a cold instance.
+    startCommand: >-
+      flask db upgrade &&
+      gunicorn --bind 0.0.0.0:$PORT --threads 4 --timeout 60 app:app
     healthCheckPath: /api/v1/health
     envVars:
       - key: FLASK_APP
@@ -79,6 +89,13 @@ services:
       # most recent send with the provider's own error text.
       - key: RESEND_API_KEY
         sync: false
+      # The origin every emailed link is built from. Without it the code
+      # falls back to the first CORS origin, which happens to be right here
+      # but only by coincidence — CORS_ORIGINS is a permission list whose
+      # order means nothing. Set it explicitly so a custom domain added
+      # later cannot silently redirect password-reset links.
+      - key: FRONTEND_URL
+        value: https://survitec-x-dahawi.vercel.app
       # The MAIL_* block below is the local-development transport, kept as
       # the fallback when RESEND_API_KEY is absent. Leaving both unset does
       # not error: EmailService logs each message to the service log
