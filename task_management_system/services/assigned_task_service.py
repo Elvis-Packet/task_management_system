@@ -1,4 +1,4 @@
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 
 from extensions import db
 from models.user import User
@@ -329,34 +329,40 @@ class AssignedTaskService:
     def completion_lock_reason(task):
         """Whether this task may be marked complete *yet*.
 
-        Keyed on assigned_date — the working day the task belongs to — not
-        due_date. The two differ on purpose: due_date is a deadline, and a
-        task due Friday that someone finishes on Wednesday should absolutely
-        be completable. What can't be reported finished is work whose day
-        hasn't arrived: on 9 Sep, anything dated 10 Sep or later is locked.
+        One rule, keyed on assigned_date — the working day the task belongs
+        to: a day that has arrived is open, a day that hasn't is locked. On
+        10 Sep, anything dated 10 Sep or earlier can be completed and
+        anything dated 11 Sep or later cannot, becoming completable the
+        moment its own day starts.
 
-        For tasks generated from an approved weekly plan the two dates are
-        the same value (the activity_date), so this is the exact counterpart
-        of WeeklyPlanService.completion_lock_reason on the Activity side.
+        due_date deliberately has no say here. It is a deadline, not a
+        window: missing it makes a completion *late*, which is a fact for
+        the manager to weigh at verification, not a reason to refuse the
+        record of work that genuinely happened. Blocking it instead only
+        produced tasks nobody could close without a manager first extending
+        a date — and left the honest late finisher with nowhere to put the
+        truth.
 
-        Completion is open only inside the timeline whoever assigned the
-        task set: from assigned_date (the working day it belongs to) through
-        due_date (the deadline), inclusive. Before that window the day
-        hasn't arrived; after it the deadline has passed, and reopening it
-        is the manager's decision to make — not something the employee
-        settles by completing late and quietly. The only thing that
-        reopens the window is the manager extending due_date; recording a
-        non-completion reason is append-only and deliberately does not,
-        so the message below must not suggest otherwise.
+        One consequence to keep in mind: is_overdue means "still open past
+        its due date", so completing a late task clears it, along with the
+        overdue_duration and the HR overdue flags counted from it. That is
+        the point — a cleared backlog should stop being counted as one —
+        but it does mean the lateness survives only as completed_at sitting
+        after due_date on the task itself, which is what the manager sees
+        at verification. Nothing computes a "was finished late" flag.
 
-        Applies to every task whatever its origin, self-assigned included —
-        choosing your own dates doesn't make work done outside them any
-        more real.
+        Applies to every task whatever its origin, self-assigned included.
 
-        app_today() so both boundaries fall at the employee's local
-        midnight rather than up to three hours after it. Note this makes
-        the rule date-granular: due_time narrows nothing here, and a task
-        due today stays completable until local midnight.
+        This is the exact counterpart of
+        WeeklyPlanService.completion_lock_reason on the Activity side, which
+        has always worked this way — for a task generated from an approved
+        weekly plan, assigned_date is that activity_date, so the two now
+        agree on the same day for the same piece of work.
+
+        app_today() so the boundary falls at the employee's local midnight
+        rather than up to three hours after it. The rule is date-granular:
+        assigned_time narrows nothing, so a task dated today is completable
+        from local midnight onwards.
 
         Returns None when completion is allowed, otherwise the exact
         rejection message."""
@@ -364,73 +370,11 @@ class AssignedTaskService:
         if not task.assigned_date:
             return None
 
-        today = app_today()
-
-        if task.assigned_date > today:
+        if task.assigned_date > app_today():
             return (
                 f"“{task.title}” is scheduled for "
                 f"{task.assigned_date.strftime('%A, %d %b %Y')} — it can't be "
                 f"marked complete before that day."
-            )
-
-        # Guard against inverted data (a due date before the working day):
-        # the assigned day itself must always remain completable, or the
-        # task could never be closed by anyone.
-        window_end = task.due_date if task.due_date and task.due_date >= task.assigned_date else task.assigned_date
-
-        if today > window_end:
-            return (
-                f"“{task.title}” was due {window_end.strftime('%A, %d %b %Y')} and "
-                f"is now overdue — ask your manager to extend the due date "
-                f"before you can complete it."
-            )
-
-        return None
-
-    @staticmethod
-    def chronological_lock_reason(task):
-        """Work is completed in date order: the earliest outstanding day
-        first, then the next, through to the last.
-
-        Scoped to the task's own ISO week, deliberately. An unfinished task
-        from a previous week would otherwise block every completion from
-        then on, and only a manager could clear it — a week boundary keeps
-        the rule a sequencing aid rather than a trap. Ordering is by day,
-        not by task: several tasks sharing one date can be completed among
-        themselves in any order.
-
-        'Outstanding' is CLOSED_STATUSES' complement, the same definition
-        the overdue check and the HR flags use, so a task the manager
-        cancelled or rejected stops blocking as soon as they decide.
-
-        Returns None when completion is allowed, otherwise the exact
-        rejection message."""
-
-        if not task.assigned_date:
-            return None
-
-        week_start = task.assigned_date - timedelta(days=task.assigned_date.weekday())
-        week_end = week_start + timedelta(days=6)
-
-        earlier = (
-            AssignedTask.query
-            .filter(
-                AssignedTask.employee_id == task.employee_id,
-                AssignedTask.id != task.id,
-                AssignedTask.assigned_date < task.assigned_date,
-                AssignedTask.assigned_date >= week_start,
-                AssignedTask.assigned_date <= week_end,
-                AssignedTask.status.notin_(CLOSED_STATUSES),
-            )
-            .order_by(AssignedTask.assigned_date.asc())
-            .first()
-        )
-
-        if earlier:
-            return (
-                f"Finish “{earlier.title}” "
-                f"({earlier.assigned_date.strftime('%A, %d %b')}) first — tasks are "
-                f"completed in date order, earliest day first."
             )
 
         return None
