@@ -231,19 +231,11 @@ def serialize_task(task, include_comments=None, include_history=False):
     # that decides, exactly as with a weekly-plan goal.
     from services.assigned_task_service import AssignedTaskService
 
-    # Either gate closes the Complete control, so they share one pair of
-    # fields; the date rule is reported first because it's the more
-    # fundamental "this day hasn't arrived" refusal.
-    #
-    # Only computed for the two statuses /complete actually accepts. Beyond
-    # saving a per-task query on every list response (chronological_lock_
-    # reason hits the database), a lock reason on an already-completed task
-    # would be noise the client has to know to ignore.
+    # Only computed for the two statuses /complete actually accepts — a lock
+    # reason on an already-completed task would be noise the client has to
+    # know to ignore.
     if task.status in (TaskStatus.PENDING, TaskStatus.IN_PROGRESS):
-        task_completion_locked_reason = (
-            AssignedTaskService.completion_lock_reason(task)
-            or AssignedTaskService.chronological_lock_reason(task)
-        )
+        task_completion_locked_reason = AssignedTaskService.completion_lock_reason(task)
     else:
         task_completion_locked_reason = None
 
@@ -259,9 +251,11 @@ def serialize_task(task, include_comments=None, include_history=False):
         "manager_name": task.manager.full_name if task.manager else None,
         "assigner_name": task.manager.full_name if task.manager else None,
         "created_by": "staff" if task.submitted_at else "manager",
-        # True only for a task the staff member raised for themselves — the
-        # category exempt from the completion date lock. Distinct from
-        # created_by, which reports "staff" for plan-derived tasks too.
+        # True only for a task the staff member raised for themselves.
+        # Distinct from created_by, which reports "staff" for plan-derived
+        # tasks too. Carries no exemption from the completion date lock —
+        # that rule is origin-blind, and the claim that it wasn't had never
+        # matched the code.
         "self_assigned": AssignedTaskService.is_self_assigned(task),
         "title": task.title,
         "description": task.description,

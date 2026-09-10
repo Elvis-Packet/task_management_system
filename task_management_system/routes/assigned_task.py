@@ -421,14 +421,12 @@ def complete_task(task_id):
 
     # Work scheduled for a future day can't be reported finished yet — the
     # same rule the weekly plan applies to the Activity this task came from.
+    # Today and every earlier day are open, however late; the client greys
+    # the button for the same reason, and this is what stops a stale page
+    # from slipping a future completion through anyway.
     locked = AssignedTaskService.completion_lock_reason(task)
     if locked:
         return err(locked, 409)
-
-    # And the week's work is closed out in date order, earliest day first.
-    out_of_order = AssignedTaskService.chronological_lock_reason(task)
-    if out_of_order:
-        return err(out_of_order, 409)
 
     task = AssignedTaskService.complete_task(task)
 
