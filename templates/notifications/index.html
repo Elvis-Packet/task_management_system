@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}
+Notifications
+{% endblock %}
+
+{% block styles %}
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/notifications.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="notification-panel">
+
+    <div class="notification-header">
+
+        <span class="notification-title">
+            Notifications
+            {% if unread_count %}
+                ({{ unread_count }} unread)
+            {% endif %}
+        </span>
+
+        <div class="notification-actions">
+
+            {% if unread_count %}
+
+                <form
+                    method="post"
+                    action="{{ url_for('notification.read_all') }}">
+
+                    <button type="submit" class="btn btn-outline">
+                        <i class="fas fa-check-double"></i>
+                        Mark all read
+                    </button>
+
+                </form>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    <div class="notification-body">
+
+        {% if notifications %}
+
+            <div class="notification-list">
+
+                {% for note in notifications %}
+
+                    <a
+                        class="notification-item {% if not note.read %}unread{% endif %}"
+                        href="{{ url_for('notification.open_notification', notification_id=note.id) }}">
+
+                        <div class="notification-icon
+                            {%- if note.priority.value == 'URGENT' %} icon-danger
+                            {%- elif note.priority.value == 'HIGH' %} icon-warning
+                            {%- elif note.notification_type.value == 'ASSIGNED_TASK' %} icon-primary
+                            {%- else %} icon-info{% endif %}">
+
+                            {% if note.notification_type.value == 'ASSIGNED_TASK' %}
+                                <i class="fas fa-clipboard-list"></i>
+                            {% elif note.notification_type.value == 'WEEKLY_PLAN' %}
+                                <i class="fas fa-calendar-week"></i>
+                            {% elif note.notification_type.value == 'PLAN_REVIEW' %}
+                                <i class="fas fa-clipboard-check"></i>
+                            {% elif note.notification_type.value == 'PERFORMANCE' %}
+                                <i class="fas fa-chart-line"></i>
+                            {% elif note.notification_type.value == 'REMINDER' %}
+                                <i class="fas fa-clock"></i>
+                            {% elif note.notification_type.value == 'SECURITY' %}
+                                <i class="fas fa-shield-halved"></i>
+                            {% else %}
+                                <i class="fas fa-bell"></i>
+                            {% endif %}
+
+                        </div>
+
+                        <div class="notification-content">
+
+                            <h4>{{ note.title }}</h4>
+
+                            <p>{{ note.message }}</p>
+
+                            <span class="notification-time">
+                                {{ note.created_at | timeago }}
+                            </span>
+
+                            <span class="priority priority-{{ note.priority.value | lower | replace('urgent', 'critical') }}">
+                                {{ note.priority.value | title }}
+                            </span>
+
+                        </div>
+
+                    </a>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="notification-empty">
+
+                <i class="fas fa-bell-slash"></i>
+
+                <h3>No notifications yet</h3>
+
+                <p>Assignments and updates will appear here.</p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

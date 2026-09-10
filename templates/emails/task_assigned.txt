@@ -1,0 +1,21 @@
+Hello {{ employee.full_name }},
+
+A new task has been assigned to you{% if manager %} by {{ manager.full_name }}{% endif %}.
+
+TASK
+----
+Title      : {{ task.title }}
+Priority   : {{ task.priority.value.title() if task.priority else "Normal" }}
+Assigned   : {{ task.assigned_date.strftime("%d %b %Y") }}{% if task.assigned_time %} at {{ task.assigned_time.strftime("%H:%M") }}{% endif %}
+Due        : {{ task.due_date.strftime("%d %b %Y") }}{% if task.due_time %} at {{ task.due_time.strftime("%H:%M") }}{% endif %}
+{% if task.description %}
+DESCRIPTION
+-----------
+{{ task.description }}
+{% endif %}
+Open the task here:
+{{ task_url }}
+
+--
+{{ app_name }}
+This is an automated message, please do not reply.

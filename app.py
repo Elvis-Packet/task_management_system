@@ -36,6 +36,7 @@ from routes.manager_review import manager_review_bp
 from routes.manager_review import manager_review_bp
 from routes.task_review import task_review_bp
 from routes.performance_routes import performance_bp
+from routes.notification import notification_bp
 
 app = Flask(__name__)
 
@@ -90,6 +91,62 @@ app.register_blueprint(
 app.register_blueprint(
     performance_bp
 )
+app.register_blueprint(notification_bp)
+
+
+# =====================================================
+# Navbar Notifications
+# Injected into every template so base.html can render
+# the dropdown without each route passing it through.
+# =====================================================
+
+from flask import has_request_context
+
+from flask_login import current_user
+
+from services.notification_service import (
+    get_notifications,
+    get_unread_count
+)
+
+
+@app.context_processor
+def inject_notifications():
+
+    # Context processors also fire when rendering email
+    # templates, which happens outside a request. current_user
+    # is None there, so guard before touching it.
+
+    empty = {
+        "nav_notifications": [],
+        "nav_unread_count": 0
+    }
+
+    if not has_request_context():
+        return empty
+
+    if not current_user or not current_user.is_authenticated:
+        return empty
+
+    return {
+
+        "nav_notifications": get_notifications(
+            current_user.id,
+            limit=8
+        ),
+
+        "nav_unread_count": get_unread_count(current_user.id)
+
+    }
+
+
+# =====================================================
+# Template Filters
+# =====================================================
+
+from utils.filters import register_filters
+
+register_filters(app)
 
 # =====================================================
 # Seed Default Users

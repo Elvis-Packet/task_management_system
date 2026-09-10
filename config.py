@@ -39,6 +39,15 @@ class Config:
 
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER")
 
-    APP_NAME = os.getenv("APP_NAME")
+    MAIL_SUPPRESS_SEND = os.getenv("MAIL_SUPPRESS_SEND", "False") == "True"
+
+    MAIL_TIMEOUT = int(os.getenv("MAIL_TIMEOUT", 15))
+
+    APP_NAME = os.getenv("APP_NAME", "Task Performance Management System")
 
     APP_VERSION = os.getenv("APP_VERSION")
+
+    APP_BASE_URL = os.getenv(
+        "APP_BASE_URL",
+        "http://127.0.0.1:5000"
+    ).rstrip("/")

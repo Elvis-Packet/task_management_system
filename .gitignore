@@ -13,3 +13,5 @@ migrations/versions/*.pyc
 *.log
 *.db
 *.sqlite3
+.env.*
+!.env.example

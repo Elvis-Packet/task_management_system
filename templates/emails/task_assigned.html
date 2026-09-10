@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_name }} — New Task Assigned</title>
+</head>
+
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:Segoe UI,Helvetica,Arial,sans-serif;color:#1f2933;">
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:24px 12px;">
+    <tr>
+      <td align="center">
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+               style="max-width:600px;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e4e7eb;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#0b3d63;padding:20px 28px;">
+              <div style="color:#ffffff;font-size:16px;font-weight:600;letter-spacing:.3px;">
+                {{ app_name }}
+              </div>
+              <div style="color:#a9c4d8;font-size:13px;margin-top:4px;">
+                New task assigned
+              </div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:28px;">
+
+              <p style="margin:0 0 16px;font-size:15px;">
+                Hello <strong>{{ employee.full_name }}</strong>,
+              </p>
+
+              <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#3e4c59;">
+                A new task has been assigned to you{% if manager %} by
+                <strong>{{ manager.full_name }}</strong>{% endif %}.
+                Please review the details below and acknowledge it in the system.
+              </p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                     style="border:1px solid #e4e7eb;border-radius:6px;font-size:14px;">
+
+                <tr>
+                  <td colspan="2" style="padding:14px 16px;background:#f7f9fb;border-bottom:1px solid #e4e7eb;">
+                    <strong style="font-size:15px;">{{ task.title }}</strong>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:10px 16px;color:#7b8794;width:130px;">Priority</td>
+                  <td style="padding:10px 16px;">
+                    {{ task.priority.value.title() if task.priority else "Normal" }}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:10px 16px;color:#7b8794;border-top:1px solid #f0f2f4;">Assigned</td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f2f4;">
+                    {{ task.assigned_date.strftime("%d %b %Y") }}{% if task.assigned_time %}
+                      at {{ task.assigned_time.strftime("%H:%M") }}{% endif %}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:10px 16px;color:#7b8794;border-top:1px solid #f0f2f4;">Due</td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f2f4;">
+                    <strong>{{ task.due_date.strftime("%d %b %Y") }}{% if task.due_time %}
+                      at {{ task.due_time.strftime("%H:%M") }}{% endif %}</strong>
+                  </td>
+                </tr>
+
+                {% if task.description %}
+                <tr>
+                  <td style="padding:10px 16px;color:#7b8794;border-top:1px solid #f0f2f4;vertical-align:top;">
+                    Description
+                  </td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f2f4;line-height:1.6;color:#3e4c59;">
+                    {{ task.description }}
+                  </td>
+                </tr>
+                {% endif %}
+
+              </table>
+
+              <div style="margin:26px 0 8px;">
+                <a href="{{ task_url }}"
+                   style="display:inline-block;background:#0b3d63;color:#ffffff;text-decoration:none;
+                          padding:12px 24px;border-radius:6px;font-size:14px;font-weight:600;">
+                  View task
+                </a>
+              </div>
+
+              <p style="margin:16px 0 0;font-size:12px;color:#9aa5b1;word-break:break-all;">
+                Or paste this link into your browser: {{ task_url }}
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:16px 28px;background:#f7f9fb;border-top:1px solid #e4e7eb;
+                       font-size:12px;color:#9aa5b1;">
+              This is an automated message from {{ app_name }}. Please do not reply.
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
