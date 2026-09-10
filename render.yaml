@@ -53,11 +53,12 @@ services:
       # the logs to explain why. If nobody can sign in to a fresh deploy,
       # check these first.
       #
-      # The accounts are matched by employee number (SA001/OM001/HR001), so
-      # changing an address here and redeploying moves that account to the
-      # new address — look for "Moved SA001 from … to …" in the deploy log.
-      # The passwords are only read when the account is first created;
-      # changing one here never resets an account that already exists.
+      # These bootstrap an EMPTY database and are ignored afterwards. Once an
+      # account exists, neither its address nor its password is reconciled
+      # from here — rename or re-password it through the application, and the
+      # change survives every restart. (Until Sept 2026 a changed address was
+      # rewritten from this variable on each boot, which silently locked out
+      # anyone whose account had been renamed in-app.)
       - key: SEED_SUPER_ADMIN_EMAIL
         sync: false
       - key: SEED_SUPER_ADMIN_PASSWORD

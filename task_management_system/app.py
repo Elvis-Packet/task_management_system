@@ -214,16 +214,16 @@ def create_seed_accounts():
     Super Admin (who creates everyone else), the single central Operational
     Manager, and HR. Staff are always created through User Management.
 
-    The employee number, not the address, is what identifies a bootstrap
-    account, so changing a SEED_*_EMAIL in the environment moves the existing
-    account to the new address on the next boot. Matching on email instead
-    would leave an already-seeded database stranded on the old address: the
-    lookup misses, the insert then collides with the unique employee_number,
-    and the caller's except swallows it as "database not ready yet".
+    The employee number, not the address, identifies a bootstrap account.
+    Matching on email instead would leave an already-seeded database
+    stranded on the old address: the lookup misses, the insert then collides
+    with the unique employee_number, and the caller's except swallows it as
+    "database not ready yet".
 
-    Only the address is reconciled. Passwords are left alone once the row
-    exists, so a password the holder has since changed in-app is never
-    silently reset back to the environment value on restart."""
+    Nothing about an existing row is reconciled — not the password, and, as
+    of now, not the address either. These variables bootstrap an empty
+    database and are ignored from then on, so an account renamed through
+    User Management stays renamed across restarts."""
 
     seeds = [
         {
@@ -268,24 +268,23 @@ def create_seed_accounts():
 
         if existing:
 
-            if existing.email == email:
-                continue
-
-            # Somebody else already holds the new address — taking it would
-            # break the unique index, so leave the account as it is and say
-            # so rather than failing the whole boot-time seed.
-            if User.query.filter_by(email=email).first():
+            # Bootstrap only. Once the row exists the application owns it,
+            # and a restart must not rewrite an address somebody set through
+            # User Management or a direct correction.
+            #
+            # This used to move the account to whatever SEED_*_EMAIL said,
+            # which made every restart quietly undo an admin's email change
+            # on these three accounts — the person simply stopped being able
+            # to sign in, with nothing to connect that to a deploy. It also
+            # contradicted how the passwords beside them already behaved.
+            #
+            # To rename a bootstrap account now, change it in the app (or in
+            # the database) — the environment no longer overrides it.
+            if existing.email != email:
                 print(
-                    f"Cannot move {data['employee_number']} to {email}: "
-                    "another user already has that email"
+                    f"{data['employee_number']} is {existing.email}; "
+                    f"{email} in the environment is ignored for existing accounts"
                 )
-                continue
-
-            print(f"Moved {data['employee_number']} from {existing.email} to {email}")
-
-            existing.email = email
-
-            changed_any = True
 
             continue
 
